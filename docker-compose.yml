@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15
@@ -30,7 +28,7 @@ services:
       - DATABASE_URL=postgresql://cantineuser:mypassword@db:5432/cantineconnect
       - DJANGO_SECRET_KEY=changecetsecret
       - DEBUG=True
-      - ALLOWED_HOSTS=localhost,backend,127.0.0.1
+      - ALLOWED_HOSTS=localhost,backend,127.0.0.1,192.168.0.242
     restart: always
 
   frontend:
@@ -46,3 +44,7 @@ services:
 
 volumes:
   postgres_data:
+
+networks:
+  cantineconnect_network:
+    driver: bridge

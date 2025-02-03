@@ -11,7 +11,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'changecetsecret')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # Définition des hôtes autorisés
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.0.242').split(',')
 
 # Applications installées
 INSTALLED_APPS = [
