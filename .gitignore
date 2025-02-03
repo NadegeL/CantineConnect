@@ -1,0 +1,18 @@
+# Python files
+*.pyc
+__pycache__
+*.pkl
+venv/
+
+# Editor-specific files
+.vscode/
+.idea/
+
+# Node_modules folder (if using npm/yarn for the frontend)
+node_modules/
+
+# Text editor configuration files
+.editorconfig
+
+# Logs and other temporary files
+*.log
