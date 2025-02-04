@@ -4,6 +4,9 @@ FROM node:20-alpine
 # Set the working directory
 WORKDIR /app
 
+# Update and upgrade the package list and installed packages
+RUN apk update && apk upgrade
+
 # Copy the package.json and yarn.lock files
 COPY package.json yarn.lock ./
 
