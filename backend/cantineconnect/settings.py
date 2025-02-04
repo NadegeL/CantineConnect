@@ -4,16 +4,16 @@ from pathlib import Path
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Sécurisation des clés sensibles via les variables d'environnement
+# Securing sensitive keys via environment variables
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'changecetsecret')
 
-# Activation du mode debug en fonction de l'environnement
+# Enable debug mode depending on environment
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # Définition des hôtes autorisés
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.0.242').split(',')
 
-# Applications installées
+# Installed applications
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -21,6 +21,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',  # If you use Django Rest Framework
+    'api',  # Add this line to include your application
+    'corsheaders',  # If you use Django CORS Headers
 ]
 
 # Middleware
@@ -32,12 +35,13 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
-# URL principale du projet
+# Main project URL
 ROOT_URLCONF = 'cantineconnect.urls'
 
-# Configuration des templates
+# Template configuration
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -57,7 +61,7 @@ TEMPLATES = [
 # WSGI Application
 WSGI_APPLICATION = 'cantineconnect.wsgi.application'
 
-# Configuration de la base de données (PostgreSQL via Docker)
+# Database configuration (PostgreSQL via Docker)
 import os
 
 DATABASES = {
@@ -71,7 +75,7 @@ DATABASES = {
     }
 }
 
-# Validation des mots de passe
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -79,15 +83,17 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Localisation
+# Location
 LANGUAGE_CODE = 'fr-fr'
 TIME_ZONE = 'Europe/Paris'
 USE_I18N = True
 USE_TZ = True
 
-# Fichiers statiques
+# Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-# Clé primaire par défaut
+# Default primary key
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CORS_ALLOW_ALL_ORIGINS = True  # To be restricted in production
