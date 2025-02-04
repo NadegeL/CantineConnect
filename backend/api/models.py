@@ -9,9 +9,19 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='custom_user_set',  # Spécifiez un related_name unique ici
+        blank=True
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='custom_user_permissions_set',  # Spécifiez un related_name unique ici
+        blank=True
+    )
+
     def __str__(self):
         return self.username if self.username else "No username"
-
 
 class Parent(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
