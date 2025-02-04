@@ -1,13 +1,17 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
+import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    tailwindcss(),
+  ],
   esbuild: {
     target: 'esnext',
-    platform: 'linux'
+    platform: 'linux',
   },
   server: {
-    host: '0.0.0.0'
-  }
-})
+    host: '0.0.0.0',
+  },
+});
