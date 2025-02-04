@@ -1,24 +1,23 @@
-# Utilisez une image de base Node.js
+# Use a base Node.js image
 FROM node:20-alpine
 
-# Définissez le répertoire de travail
+# Set the working directory
 WORKDIR /app
 
-# Copiez le fichier package.json et yarn.lock
+# Copy the package.json and yarn.lock files
 COPY package.json yarn.lock ./
 
-# Installez les dépendances de base
+# Install unocss
+RUN yarn add -D unocss
+
+# Install the base dependencies
 RUN yarn install
 
-# Installer tailwindcss, @tailwindcss/vite, ky et le plugin Vue
-RUN yarn add tailwindcss @tailwindcss/vite ky
-RUN yarn add @vitejs/plugin-vue --dev
-
-# Copiez le reste des fichiers de l'application
+# Copy the rest of the application files
 COPY . .
 
-# Exposez le port sur lequel l'application va tourner
+# Expose the port on which the application will run
 EXPOSE 5173
 
-# Commande pour démarrer l'application
-CMD ["yarn", "dev"]
+# Command to start the application
+CMD ["yarn", "dev", "--host"]
