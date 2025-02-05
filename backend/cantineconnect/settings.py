@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',  # If you use Django Rest Framework
+    'drf_yasg', # For Swagger
     'api',  # Add this line to include your application
     'corsheaders',  # If you use Django CORS Headers
 ]
