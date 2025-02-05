@@ -2,6 +2,10 @@ from django.shortcuts import render
 from rest_framework import generics
 from .models import User, Parent, Student, Administration
 from .serializers import UserSerializer, ParentSerializer, StudentSerializer, AdministrationSerializer
+from django.shortcuts import redirect
+
+def home(request):
+    return redirect('admin:index')
 
 class UserListCreate(generics.ListCreateAPIView):
     queryset = User.objects.all()
