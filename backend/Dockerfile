@@ -17,4 +17,7 @@ RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application files after installing dependencies
 COPY . .
 
+# Expose the port on which the application will run
+EXPOSE 8000
+
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

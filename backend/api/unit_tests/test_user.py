@@ -1,5 +1,5 @@
 from django.test import TestCase
-from api.models import User, Parent
+from api.models import User, Parent, Address
 from django.db.utils import IntegrityError
 
 class UserModelTest(TestCase):
@@ -34,7 +34,19 @@ class UserModelTest(TestCase):
     def test_user_parent_relation(self):
         # Create a user
         user = User.objects.create_user(username="parent_user", password="password123")
-        # Create a parent associated with the user
-        parent = Parent.objects.create(user=user, email="parent@example.com", phone_number="12345", address_line_1="123 Main St", city="Paris", postal_code="75000", country="France")
+
+        # Create an Address first, as it's needed by the Parent model
+        address = Address.objects.create(
+            address_line_1="123 Main St",
+            city="Paris",
+            postal_code="75000",
+            country="France"
+        )
+
+        # Create a parent associated with the user, using the created Address
+        parent = Parent.objects.create(user=user, phone_number="12345", address=address)
+
         # Verify that the parent's user field matches the created user
         self.assertEqual(parent.user, user)
+        # Verify that the parent's address field is correctly set
+        self.assertEqual(parent.address, address)

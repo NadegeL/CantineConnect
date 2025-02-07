@@ -1,50 +1,59 @@
 import factory
-from api.models import User, Parent, Student, Administration
+from factory.fuzzy import FuzzyText
+from api.models import User, Parent, Student, Administration, Address
 from django.contrib.auth.hashers import make_password
 
-# Factory for User
+# Factory pour l'adresse
+class AddressFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Address
+
+    address_line_1 = factory.Faker('street_address')
+    address_line_2 = factory.Faker('secondary_address')
+    city = factory.Faker('city')
+    postal_code = factory.Faker('postcode')
+    country = factory.Faker('country')
+
+# Factory pour l'utilisateur
 class UserFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = User
 
     username = factory.Faker('user_name')
-    password = factory.Faker('password')
-    email = factory.Faker('email')
+    password = factory.LazyFunction(lambda: make_password('securepassword123'))
+    email = FuzzyText(length=150, prefix='user.', suffix='@example.com')
 
-# Factory for Parent
+# Factory pour le parent
 class ParentFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Parent
 
     user = factory.SubFactory(UserFactory)
-    email = factory.Faker('email')
-    phone_number = factory.Faker('phone_number', locale='en_US')  # Limiter à 20 caractères
-    address_line_1 = factory.Faker('address')
-    city = factory.Faker('city')
-    postal_code = factory.Faker('postcode')
-    country = factory.Faker('country')
+    phone_number = factory.Faker('phone_number', locale='en_US')
+    is_admin = factory.Faker('boolean')
+    invoice_available = factory.Faker('boolean')
+    address = factory.SubFactory(AddressFactory)
 
-# Factory for Student
+# Factory pour l'étudiant
 class StudentFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Student
 
-    birth_date = factory.Faker('date_of_birth')
-    grade = factory.Faker('word')
+    user = factory.SubFactory(UserFactory)
     parent = factory.SubFactory(ParentFactory)
+    grade = factory.Faker('word')
+    birth_date = factory.Faker('date_of_birth')
 
-# Factory for Administration
+# Factory pour l'administration
 class AdministrationFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Administration
 
+    user = factory.SubFactory(UserFactory)
     firstname = factory.Faker('first_name')
     lastname = factory.Faker('last_name')
-    email = factory.Faker('email')
     password = factory.LazyFunction(lambda: make_password('securepassword123'))
     is_admin = True
-    address_line_1 = factory.Faker('address')
-    city = factory.Faker('city')
-    postal_code = factory.Faker('postcode')
-    country = factory.Faker('country')
-    zone_id = factory.Faker('random_int', min=1, max=9999999999)  # Assurez-vous que la valeur est inférieure à 10 caractères
+    invoice_edited = factory.Faker('boolean')
+    address = factory.SubFactory(AddressFactory)
+    zone_id = factory.Faker('random_int', min=1, max=99)
