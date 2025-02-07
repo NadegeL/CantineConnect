@@ -2,6 +2,14 @@ import factory
 from factory.fuzzy import FuzzyText
 from api.models import User, Parent, Student, Administration, Address
 from django.contrib.auth.hashers import make_password
+from faker import Faker
+
+# Using the French locale
+fake = Faker('fr_FR')
+
+# List of possible zones
+zones = ['A', 'B', 'C', 'Corse']
+
 
 # Factory for the address
 class AddressFactory(factory.django.DjangoModelFactory):
@@ -54,4 +62,5 @@ class AdministrationFactory(factory.django.DjangoModelFactory):
     is_admin = True
     invoice_edited = factory.Faker('boolean')
     address = factory.SubFactory(AddressFactory)
-    zone_id = factory.Faker('random_int', min=1, max=99)
+    zone_id = factory.LazyAttribute(
+    lambda _: fake.random_element(elements=zones))
