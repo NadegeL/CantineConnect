@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import make_password
 import uuid
 from phonenumber_field.modelfields import PhoneNumberField
+from django.utils.crypto import get_random_string
 
 
 # Custom user model inheriting from AbstractUser
@@ -43,19 +44,29 @@ class Parent(models.Model):
     is_admin = models.BooleanField(default=False)
     invoice_available = models.BooleanField(default=False)
     address = models.ForeignKey(Address, on_delete=models.CASCADE)
+    is_activated = models.BooleanField(default=False)
+    activation_token = models.CharField(
+        max_length=50, unique=True, blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
 
+    def save(self, *args, **kwargs):
+        if not self.activation_token:
+            self.activation_token = get_random_string(length=40)
+        super().save(*args, **kwargs)
+
 # Student model
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    parents = models.ManyToManyField(Parent, related_name='students', blank=True)
+    parents = models.ManyToManyField(
+        Parent, related_name='students', blank=True)
     grade = models.CharField(max_length=10)
     birth_date = models.DateField()
 
     def __str__(self):
-        parent_names = ", ".join([f"{parent.user.first_name} {parent.user.last_name}" for parent in self.parents.all()])
+        parent_names = ", ".join(
+            [f"{parent.user.first_name} {parent.user.last_name}" for parent in self.parents.all()])
         return f"{self.user.first_name} {self.user.last_name} - {self.grade} (Parents: {parent_names})"
 
     @classmethod
