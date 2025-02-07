@@ -5,42 +5,42 @@ from django.core.exceptions import ValidationError
 
 class AdministrationModelTest(TestCase):
     def test_create_administration(self):
-        # Crée une instance d'administration en utilisant la factory
+        # Creates an administration instance using the factory
         admin = AdministrationFactory()
 
-        # Vérifie que l'instance est de type Administration
+        # Checks that the instance is of type Administration
         self.assertIsInstance(admin, Administration)
 
-        # Vérifie que certains attributs sont présents
+        # Checks that certain attributes are present
         self.assertTrue(hasattr(admin, 'user'))
         self.assertTrue(hasattr(admin, 'address'))
 
-        # Vérifie que le champ 'is_admin' est défini sur True
+        # Checks that the 'is_admin' field is set to True
         self.assertTrue(admin.is_admin)
 
     def test_str_method(self):
-        # Crée une instance d'administration en utilisant la factory
+        # Creates an administration instance using the factory
         admin = AdministrationFactory()
 
-        # Teste la méthode __str__() qui retourne le nom complet de l'admin
+        # Tests the __str__() method, which returns the admin's full name
         self.assertEqual(str(admin), f"{admin.user.first_name} {admin.user.last_name}")
 
     def test_admin_zone_id(self):
-        # Crée une instance d'administration en utilisant la factory
+        # Creates an administration instance using the factory
         admin = AdministrationFactory()
 
-        # Vérifie que l'attribut zone_id est défini et n'est pas None
+        # Checks that the zone_id attribute is set and not None
         self.assertTrue(hasattr(admin, 'zone_id'))
         self.assertIsNotNone(admin.zone_id)
 
     def test_invalid_email(self):
-        # Définit un email invalide
+        # Defines an invalid email
         invalid_email = "invalidemail"
 
-        # Crée une instance d'utilisateur avec l'email invalide
+        # Creates a user instance with invalid email
         admin = AdministrationFactory(user__email=invalid_email)
 
-        # Vérifie que la validation de l'email lève une ValidationError
+        # Checks that email validation lifts a ValidationError
         with self.assertRaises(ValidationError):
             admin.user.full_clean()
 

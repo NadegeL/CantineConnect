@@ -5,67 +5,67 @@ from django.core.exceptions import ValidationError
 
 class ParentModelTest(TestCase):
     def test_create_parent(self):
-        # Créer une instance d'adresse
+        # Create an address instance
         address = AddressFactory()
 
-        # Créer une instance d'utilisateur
+        # Create a user instance
         user = UserFactory()
 
-        # Créer une instance de parent associée à l'utilisateur et à l'adresse
+        # Create a parent instance associated with the user and address
         parent = ParentFactory(user=user, address=address)
 
-        # Vérifier que l'instance est de type Parent
+        # Check that the instance is of type Parent
         self.assertIsInstance(parent, Parent)
 
-        # Vérifier que l'utilisateur associé est créé
+        # Check that the associated user has been created
         self.assertIsNotNone(parent.user)
 
-        # Vérifier que l'adresse associée est créée
+        # Check that the associated address has been created
         self.assertIsNotNone(parent.address)
 
-        # Vérifier que certaines informations sont présentes
+        # Check that certain information is present
         self.assertTrue(hasattr(parent, 'phone_number'))
         self.assertEqual(parent.address, address)
 
     def test_str_method(self):
-        # Créer une instance d'adresse
+        # Create an address instance
         address = AddressFactory()
 
-        # Créer une instance d'utilisateur
+        # Create a user instance
         user = UserFactory()
 
-        # Créer une instance de parent associée à l'utilisateur et à l'adresse
+        # Create a parent instance associated with the user and address
         parent = ParentFactory(user=user, address=address)
 
-        # Tester la méthode __str__() qui retourne le nom du parent
+        # Test the __str__() method, which returns the parent's name
         self.assertEqual(str(parent), f"{parent.user.first_name} {parent.user.last_name}")
 
     def test_parent_user_link(self):
-        # Créer une instance d'adresse
+        # Create an address instance
         address = AddressFactory()
 
-        # Créer une instance d'utilisateur
+        # Create a user instance
         user = UserFactory()
 
-        # Créer une instance de parent associée à l'utilisateur et à l'adresse
+        # Create a parent instance associated with the user and address
         parent = ParentFactory(user=user, address=address)
 
-        # Vérifier que l'instance d'utilisateur est correctement associée au parent
+        # Check that the user instance is correctly associated with the parent
         self.assertEqual(user, parent.user)
 
     def test_invalid_email(self):
-        # Définir un email invalide
+        # Define an invalid email
         invalid_email = "invalidemail"
 
-        # Créer une instance d'adresse
+        # Create an address instance
         address = AddressFactory()
 
-        # Créer une instance d'utilisateur avec l'email invalide
+        # Create a user instance with an invalid email address
         user = UserFactory(email=invalid_email)
 
-        # Créer une instance de parent associée à l'utilisateur et à l'adresse
+        # Create a parent instance associated with the user and address
         parent = ParentFactory(user=user, address=address)
 
-        # Vérifier que l'email est valide
+        # Check that the email is valid
         with self.assertRaises(ValidationError):
             parent.full_clean()

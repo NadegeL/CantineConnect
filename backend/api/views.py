@@ -1,13 +1,14 @@
 from rest_framework import viewsets
+from .models import User, Parent, Student, Administration
+from .serializers import UserSerializer, ParentSerializer, StudentSerializer, AdministrationSerializer
+from drf_yasg.utils import swagger_auto_schema
 import datetime
 from django.http import HttpResponse
 from django.shortcuts import redirect
-from drf_yasg.utils import swagger_auto_schema
-from .models import User, Parent, Student, Administration
-from .serializers import UserSerializer, ParentSerializer, StudentSerializer, AdministrationSerializer
 
 def home(request):
     return HttpResponse("Welcome to the CantineConnect API")
+
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -35,6 +36,7 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
+
 
 class ParentViewSet(viewsets.ModelViewSet):
     queryset = Parent.objects.all()
@@ -64,6 +66,7 @@ class ParentViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
+
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
@@ -83,6 +86,7 @@ class StudentViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
+
 
 class AdministrationViewSet(viewsets.ModelViewSet):
     queryset = Administration.objects.all()

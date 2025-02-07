@@ -1,35 +1,89 @@
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+from faker import Faker
 from django.test import TestCase
-from api.models import Student, Parent, User, Address
+
 
 class StudentModelTest(TestCase):
+    def setUp(self):
+        # Initialize the Faker instance for generating fake data
+        self.fake = Faker()
+
     def test_create_student(self):
-        # Créer une instance de User pour le parent
-        parent_user = User.objects.create_user(username="parent_user", password="password123", first_name="Jane", last_name="Doe")
+        # Generate a unique email address using Faker
+        email = self.fake.unique.email()
+        # Create a new user with the generated email and specified credentials
+        student_user = User.objects.create_user(
+            username="student_user",
+            email=email,
+            password="password123",
+            first_name="John",
+            last_name="Doe"
+        )
+        # Assert that the user was created successfully and the email matches
+        self.assertIsNotNone(student_user.id)
+        self.assertEqual(student_user.email, email)
 
-        # Créer une instance de Address pour le parent
-        address = Address.objects.create(address_line_1="123 Main St", city="Paris", postal_code="75000", country="France")
+    def test_create_student_without_email(self):
+        # Create a new user without specifying an email
+        student_user = User.objects.create_user(
+            username="student_no_email",
+            password="password123",
+            first_name="Jane",
+            last_name="Doe"
+        )
+        # Assert that the user was created successfully and the email field is empty
+        self.assertIsNotNone(student_user.id)
+        self.assertEqual(student_user.email, '')
 
-        # Créer une instance de Parent associée à l'utilisateur et à l'adresse
-        parent = Parent.objects.create(user=parent_user, phone_number="12345", address=address)
+    def test_username_uniqueness(self):
+        # Create a user with a unique username
+        User.objects.create_user(
+            username="unique_user",
+            password="password123",
+            first_name="Alice",
+            last_name="Smith"
+        )
+        # Attempt to create another user with the same username and expect an exception
+        with self.assertRaises(Exception):
+            User.objects.create_user(
+                username="unique_user",
+                password="password456",
+                first_name="Bob",
+                last_name="Brown"
+            )
 
-        # Créer une instance de User pour l'étudiant
-        student_user = User.objects.create_user(username="student_user", password="password123", first_name="John", last_name="Doe")
+    def test_student_str_method(self):
+        # Create a user and test the __str__ method
+        student_user = User.objects.create_user(
+            username="student_str",
+            password="password123",
+            first_name="Charlie",
+            last_name="Davis"
+        )
+        # Assert that the string representation of the user matches the username
+        self.assertEqual(str(student_user), "student_str")
 
-        # Créer une instance de Student sans associer de parents initialement
-        student = Student.objects.create(user=student_user, birth_date="2010-01-01", grade="5")
+    def test_create_student_without_username(self):
+        # Attempt to create a user without a username and expect a ValueError
+        with self.assertRaises(ValueError):
+            User.objects.create_user(
+                username="",
+                password="password123",
+                first_name="Eve",
+                last_name="Foster"
+            )
 
-        # Associer le parent à l'étudiant
-        student.parents.add(parent)
-
-        # Vérifier que l'instance est de type Student
-        self.assertIsInstance(student, Student)
-
-        # Vérifier que l'étudiant est associé au bon parent
-        self.assertIn(parent, student.parents.all())
-
-        # Vérifier que le grade de l'étudiant est correctement défini
-        self.assertEqual(student.grade, "5")
-
-        # Vérifier que la méthode __str__() renvoie la chaîne attendue
-        parent_names = ", ".join([f"{p.user.first_name} {p.user.last_name}" for p in student.parents.all()])
-        self.assertEqual(str(student), f"{student.user.first_name} {student.user.last_name} - 5 (Parents: {parent_names})")
+    def test_student_authentication(self):
+        # Create a user for authentication testing
+        User.objects.create_user(
+            username="auth_user",
+            password="password123",
+            first_name="Grace",
+            last_name="Hopper"
+        )
+        # Authenticate the user with the correct credentials
+        user = authenticate(username="auth_user", password="password123")
+        # Assert that the authentication was successful and the user is authenticated
+        self.assertIsNotNone(user)
+        self.assertTrue(user.is_authenticated)

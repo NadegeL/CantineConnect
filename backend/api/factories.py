@@ -3,7 +3,7 @@ from factory.fuzzy import FuzzyText
 from api.models import User, Parent, Student, Administration, Address
 from django.contrib.auth.hashers import make_password
 
-# Factory pour l'adresse
+# Factory for the address
 class AddressFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Address
@@ -14,7 +14,7 @@ class AddressFactory(factory.django.DjangoModelFactory):
     postal_code = factory.Faker('postcode')
     country = factory.Faker('country')
 
-# Factory pour l'utilisateur
+# Factory for the user
 class UserFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = User
@@ -23,7 +23,7 @@ class UserFactory(factory.django.DjangoModelFactory):
     password = factory.LazyFunction(lambda: make_password('securepassword123'))
     email = FuzzyText(length=150, prefix='user.', suffix='@example.com')
 
-# Factory pour le parent
+# Factory for the parent
 class ParentFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Parent
@@ -34,7 +34,7 @@ class ParentFactory(factory.django.DjangoModelFactory):
     invoice_available = factory.Faker('boolean')
     address = factory.SubFactory(AddressFactory)
 
-# Factory pour l'étudiant
+# Factory for students
 class StudentFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Student
@@ -44,15 +44,13 @@ class StudentFactory(factory.django.DjangoModelFactory):
     grade = factory.Faker('word')
     birth_date = factory.Faker('date_of_birth')
 
-# Factory pour l'administration
+# Factory for administration
 class AdministrationFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Administration
 
+    # This will create a user with firstname, lastname, etc.
     user = factory.SubFactory(UserFactory)
-    firstname = factory.Faker('first_name')
-    lastname = factory.Faker('last_name')
-    password = factory.LazyFunction(lambda: make_password('securepassword123'))
     is_admin = True
     invoice_edited = factory.Faker('boolean')
     address = factory.SubFactory(AddressFactory)

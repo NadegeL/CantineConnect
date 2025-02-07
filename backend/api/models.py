@@ -4,13 +4,15 @@ from django.contrib.auth.hashers import make_password
 import uuid
 from phonenumber_field.modelfields import PhoneNumberField
 
-# Modèle utilisateur personnalisé héritant de AbstractUser
+
+# Custom user model inheriting from AbstractUser
 class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
-    email = models.EmailField(unique=True, max_length=254)  # Assurez-vous que l'email est unique
+    # Make sure the email is unique
+    email = models.EmailField(unique=True, max_length=254)
 
     groups = models.ManyToManyField(
         'auth.Group',
@@ -23,7 +25,7 @@ class User(AbstractUser):
         blank=True
     )
 
-# Modèle d'adresse
+# Address template
 class Address(models.Model):
     address_line_1 = models.CharField(max_length=255)
     address_line_2 = models.CharField(max_length=255, blank=True, null=True)
@@ -34,7 +36,7 @@ class Address(models.Model):
     def __str__(self):
         return f"{self.address_line_1}, {self.city}, {self.country}"
 
-# Modèle Parent
+# Parent model
 class Parent(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     phone_number = PhoneNumberField()
@@ -45,7 +47,7 @@ class Parent(models.Model):
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
 
-# Modèle Étudiant
+# Student model
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     parents = models.ManyToManyField(Parent, related_name='students', blank=True)
@@ -67,12 +69,9 @@ class Student(models.Model):
             student.parents.add(parent)
         return student
 
-# Modèle Administration
+# Administration model
 class Administration(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    firstname = models.CharField(max_length=150)
-    lastname = models.CharField(max_length=150)
-    password = models.CharField(max_length=128)
     is_admin = models.BooleanField(default=True)
     invoice_edited = models.BooleanField(default=False)
     address = models.ForeignKey(Address, on_delete=models.CASCADE)
@@ -82,6 +81,7 @@ class Administration(models.Model):
         return f"{self.user.first_name} {self.user.last_name}"
 
     def save(self, *args, **kwargs):
-        # S'assurer que le mot de passe est haché avant de sauvegarder
-        self.password = make_password(self.password)
+        if self.user and self.user.password:
+            self.user.password = make_password(self.user.password)
+            self.user.save()
         super().save(*args, **kwargs)
