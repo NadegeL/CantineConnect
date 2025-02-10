@@ -1,6 +1,6 @@
 from rest_framework import viewsets
-from .models import User, Parent, Student, Administration, Address
-from .serializers import UserSerializer, ParentSerializer, StudentSerializer, AdministrationSerializer, AddressSerializer
+from .models import User, Parent, Student, Administration, Address, SchoolClass
+from .serializers import UserSerializer, ParentSerializer, StudentSerializer, AdministrationSerializer, AddressSerializer, SchoolClassSerializer
 from drf_yasg.utils import swagger_auto_schema
 import datetime
 from django.http import HttpResponse
@@ -120,3 +120,8 @@ class AdministrationViewSet(viewsets.ModelViewSet):
 class AddressViewSet(viewsets.ModelViewSet):
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
+
+
+class SchoolClassViewSet(viewsets.ModelViewSet):
+    queryset = SchoolClass.objects.all()
+    serializer_class = SchoolClassSerializer

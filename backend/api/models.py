@@ -90,13 +90,21 @@ class Parent(models.Model):
             self.activation_token = get_random_string(length=40)
         super().save(*args, **kwargs)
 
+# SchoolClass model
+class SchoolClass(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
 
 # Student model
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     parents = models.ManyToManyField(
         Parent, related_name='students', blank=True)
-    grade = models.CharField(max_length=10)
+    grade = models.ForeignKey(
+        SchoolClass, on_delete=models.SET_NULL, null=True, blank=True)
     birth_date = models.DateField()
     allergies = models.ManyToManyField(
         'Allergy',
@@ -107,7 +115,7 @@ class Student(models.Model):
     def __str__(self):
         parent_names = ", ".join(
             [f"{parent.user.first_name} {parent.user.last_name}" for parent in self.parents.all()])
-        return f"{self.user.first_name} {self.user.last_name} - {self.grade} (Parents: {parent_names})"
+        return f"{self.user.first_name} {self.user.last_name} - {self.grade.name if self.grade else 'No Class'} (Parents: {parent_names})"
 
 # Administration model
 class Administration(models.Model):
@@ -128,7 +136,7 @@ class Administration(models.Model):
 
 
 class SchoolZone(models.Model):
-    """représente une zone scolaire"""
+    """Représente une zone scolaire"""
     ZONE_CHOICES = [
         ('A', 'Zone A'),
         ('B', 'Zone B'),
@@ -147,12 +155,12 @@ class SchoolZone(models.Model):
 
 
 class Holidays(models.Model):
-    """vacances scolaires"""
+    """Vacances scolaires"""
     zone = models.ForeignKey(
         SchoolZone,
         on_delete=models.CASCADE,
         related_name="holidays",
-        verbose_name="Zone accadémique"
+        verbose_name="Zone académique"
     )
     start_date = models.DateField(verbose_name="Date de début des vacances")
     end_date = models.DateField(verbose_name="Date de fin des vacances")
@@ -173,7 +181,7 @@ class Holidays(models.Model):
 
 
 class Allergy(models.Model):
-    """gérer les allergies et restrictions alimentaires"""
+    """Gérer les allergies et restrictions alimentaires"""
     name = models.CharField(
         max_length=100,
         unique=True,
