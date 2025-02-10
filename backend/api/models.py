@@ -67,8 +67,14 @@ class Address(models.Model):
 
 # Parent model
 class Parent(models.Model):
+    COUNTRY_CHOICES = [
+        ('FR', 'France'),
+        ('CH', 'Suisse'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     phone_number = PhoneNumberField()
+    country_code = models.CharField(max_length=2, choices=COUNTRY_CHOICES)
     is_admin = models.BooleanField(default=False)
     invoice_available = models.BooleanField(default=False)
     address = models.ForeignKey(Address, on_delete=models.CASCADE)
@@ -83,6 +89,7 @@ class Parent(models.Model):
         if not self.activation_token:
             self.activation_token = get_random_string(length=40)
         super().save(*args, **kwargs)
+
 
 # Student model
 class Student(models.Model):
