@@ -7,7 +7,7 @@ from .views import (
     AdministrationViewSet, 
     AllergyViewSet,
     SchoolZoneViewSet,
-    HolidayViewSet
+    HolidaysViewSet
 )
 
 router = DefaultRouter()

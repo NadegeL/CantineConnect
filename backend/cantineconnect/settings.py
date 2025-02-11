@@ -26,7 +26,12 @@ INSTALLED_APPS = [
     'api',  # Add this line to include your application
     'corsheaders',  # If you use Django CORS Headers
 ]
-
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
+}
 # Middleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
