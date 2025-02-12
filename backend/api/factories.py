@@ -27,20 +27,25 @@ class UserFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = User
 
-    username = factory.Faker('user_name')
     password = factory.LazyFunction(lambda: make_password('securepassword123'))
     email = FuzzyText(length=150, prefix='user.', suffix='@example.com')
 
 # Factory for the parent
+
+
 class ParentFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Parent
 
     user = factory.SubFactory(UserFactory)
-    phone_number = factory.Faker('phone_number', locale='en_US')
-    is_admin = factory.Faker('boolean')
-    invoice_available = factory.Faker('boolean')
+    phone_number = factory.Faker('phone_number', locale='fr_FR')
+    country_code = 'FR'
+    is_admin = False
+    invoice_available = False
     address = factory.SubFactory(AddressFactory)
+    is_activated = False
+    relation = 'Mère'
+
 
 # Factory for students
 class StudentFactory(factory.django.DjangoModelFactory):

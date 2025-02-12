@@ -81,6 +81,7 @@ class Parent(models.Model):
     is_activated = models.BooleanField(default=False)
     activation_token = models.CharField(
         max_length=50, unique=True, blank=True, null=True)
+    relation = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
@@ -100,22 +101,20 @@ class SchoolClass(models.Model):
 
 # Student model
 class Student(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    first_name = models.CharField(max_length=30, blank=False)
+    last_name = models.CharField(max_length=30, blank=False)
     parents = models.ManyToManyField(
         Parent, related_name='students', blank=True)
     grade = models.ForeignKey(
         SchoolClass, on_delete=models.SET_NULL, null=True, blank=True)
     birth_date = models.DateField()
     allergies = models.ManyToManyField(
-        'Allergy',
-        blank=True,
-        verbose_name="Allergies et restrictions alimentaires"
-    )
+        'Allergy', blank=True, verbose_name="Allergies et restrictions alimentaires")
 
     def __str__(self):
         parent_names = ", ".join(
             [f"{parent.user.first_name} {parent.user.last_name}" for parent in self.parents.all()])
-        return f"{self.user.first_name} {self.user.last_name} - {self.grade.name if self.grade else 'No Class'} (Parents: {parent_names})"
+        return f"{self.first_name} {self.last_name} - {self.grade.name if self.grade else 'No Class'} (Parents: {parent_names})"
 
 # Administration model
 class Administration(models.Model):

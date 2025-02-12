@@ -1,71 +1,82 @@
 from django.test import TestCase
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APIClient
 from api.models import Parent, User, Address
 from api.factories import ParentFactory, UserFactory, AddressFactory
-from django.core.exceptions import ValidationError
 
-class ParentModelTest(TestCase):
+
+class ParentTests(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.address = AddressFactory()
+        self.user = UserFactory()
+        self.parent_data = {
+            'user': self.user.id,
+            'phone_number': '+33123456789',
+            'country_code': 'FR',
+            'is_admin': False,
+            'invoice_available': False,
+            'address': self.address.id,
+            'is_activated': False,
+            'relation': 'Mère'
+        }
+        self.url = reverse('parent-list')
+
     def test_create_parent(self):
-        # Create an address instance
-        address = AddressFactory()
+        response = self.client.post(self.url, self.parent_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Parent.objects.count(), 1)
+        self.assertEqual(Parent.objects.get().relation, 'Mère')
 
-        # Create a user instance
-        user = UserFactory()
+    def test_create_parent_missing_field(self):
+        invalid_data = self.parent_data.copy()
+        invalid_data.pop('phone_number')
+        response = self.client.post(self.url, invalid_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        # Create a parent instance associated with the user and address
-        parent = ParentFactory(user=user, address=address)
+    def test_get_parent_list(self):
+        self.client.post(self.url, self.parent_data, format='json')
+        response = self.client.get(self.url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
 
-        # Check that the instance is of type Parent
-        self.assertIsInstance(parent, Parent)
+    def test_get_parent_detail(self):
+        parent = ParentFactory()
+        url_detail = reverse('parent-detail', kwargs={'pk': parent.id})
+        response = self.client.get(url_detail, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['relation'], parent.relation)
 
-        # Check that the associated user has been created
-        self.assertIsNotNone(parent.user)
+    def test_update_parent(self):
+        parent = ParentFactory()
+        url_detail = reverse('parent-detail', kwargs={'pk': parent.id})
+        updated_data = {'relation': 'Père'}
+        response = self.client.patch(url_detail, updated_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Parent.objects.get().relation, 'Père')
 
-        # Check that the associated address has been created
-        self.assertIsNotNone(parent.address)
+    def test_delete_parent(self):
+        parent = ParentFactory()
+        url_detail = reverse('parent-detail', kwargs={'pk': parent.id})
+        response = self.client.delete(url_detail, format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Parent.objects.count(), 0)
 
-        # Check that certain information is present
-        self.assertTrue(hasattr(parent, 'phone_number'))
-        self.assertEqual(parent.address, address)
+    def test_create_duplicate_parent(self):
+        # Create the first parent
+        response = self.client.post(self.url, self.parent_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Parent.objects.count(), 1)
 
-    def test_str_method(self):
-        # Create an address instance
-        address = AddressFactory()
+        # Create a new user for the second parent
+        new_user = UserFactory()
+        duplicate_parent_data = self.parent_data.copy()
+        duplicate_parent_data['user'] = new_user.id
 
-        # Create a user instance
-        user = UserFactory()
-
-        # Create a parent instance associated with the user and address
-        parent = ParentFactory(user=user, address=address)
-
-        # Test the __str__() method, which returns the parent's name
-        self.assertEqual(str(parent), f"{parent.user.first_name} {parent.user.last_name}")
-
-    def test_parent_user_link(self):
-        # Create an address instance
-        address = AddressFactory()
-
-        # Create a user instance
-        user = UserFactory()
-
-        # Create a parent instance associated with the user and address
-        parent = ParentFactory(user=user, address=address)
-
-        # Check that the user instance is correctly associated with the parent
-        self.assertEqual(user, parent.user)
-
-    def test_invalid_email(self):
-        # Define an invalid email
-        invalid_email = "invalidemail"
-
-        # Create an address instance
-        address = AddressFactory()
-
-        # Create a user instance with an invalid email address
-        user = UserFactory(email=invalid_email)
-
-        # Create a parent instance associated with the user and address
-        parent = ParentFactory(user=user, address=address)
-
-        # Check that the email is valid
-        with self.assertRaises(ValidationError):
-            parent.full_clean()
+        # Attempt to create an identical parent with a different user
+        response = self.client.post(
+            self.url, duplicate_parent_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Parent.objects.count(), 2)

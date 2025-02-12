@@ -84,7 +84,7 @@ class ParentModelTest(TestCase):
         # Creates a parent instance
         user = UserFactory(email="parent@example.com", password="temporary")
         parent = Parent.objects.create(
-            user=user, phone_number="+123456789", address=address)
+            user=user, phone_number="+33123456789", address=address)
 
         # Checks that the activation token is generated
         self.assertIsNotNone(parent.activation_token)
