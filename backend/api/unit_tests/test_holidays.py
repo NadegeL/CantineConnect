@@ -1,7 +1,7 @@
 from django.test import TestCase
-from ..factories import HolidaysFactory, SchoolZoneFactory
+from api.factories import HolidaysFactory, SchoolZoneFactory
 from datetime import date, timedelta
-from ..models import Holidays, SchoolZone
+from api.models import Holidays, SchoolZone
 
 
 class HolidaysTests(TestCase):
