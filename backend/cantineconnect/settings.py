@@ -22,10 +22,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',  # If you use Django Rest Framework
+    'drf_yasg', # For Swagger
     'api',  # Add this line to include your application
     'corsheaders',  # If you use Django CORS Headers
 ]
-
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
+}
 # Middleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
