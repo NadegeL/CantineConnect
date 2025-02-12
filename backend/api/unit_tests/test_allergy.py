@@ -1,5 +1,5 @@
 from django.test import TestCase
-from ..factories import AllergyFactory, StudentFactory
+from api.factories import AllergyFactory, StudentFactory
 
 
 class AllergyTests(TestCase):

@@ -1,4 +1,5 @@
 import factory
+from datetime import date, timedelta
 from factory.fuzzy import FuzzyText
 from api.models import User, Parent, Student, Administration, Address, SchoolClass, Allergy, Holidays, SchoolZone
 from django.contrib.auth.hashers import make_password
@@ -31,8 +32,6 @@ class UserFactory(factory.django.DjangoModelFactory):
     email = FuzzyText(length=150, prefix='user.', suffix='@example.com')
 
 # Factory for the parent
-
-
 class ParentFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Parent
@@ -44,7 +43,16 @@ class ParentFactory(factory.django.DjangoModelFactory):
     invoice_available = False
     address = factory.SubFactory(AddressFactory)
     is_activated = False
-    relation = 'Mère'
+    relation = 'Mother'
+
+
+# Factory for School Class
+class SchoolClassFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = SchoolClass
+
+    name = factory.Sequence(lambda n: f'Test Class {n}')
+
 
 
 # Factory for students
@@ -52,10 +60,27 @@ class StudentFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Student
 
-    user = factory.SubFactory(UserFactory)
-    parent = factory.SubFactory(ParentFactory)
-    grade = factory.Faker('word')
+    first_name = factory.Faker('first_name')
+    last_name = factory.Faker('last_name')
+    grade = factory.SubFactory(SchoolClassFactory)
     birth_date = factory.Faker('date_of_birth')
+
+    @factory.post_generation
+    def parents(self, create, extracted, **kwargs):
+        if not create or not extracted:
+            return
+
+        for parent in extracted:
+            self.parents.add(parent)
+
+    @factory.post_generation
+    def allergies(self, create, extracted, **kwargs):
+        if not create or not extracted:
+            return
+
+        for allergy in extracted:
+            self.allergies.add(allergy)
+
 
 # Factory for administration
 class AdministrationFactory(factory.django.DjangoModelFactory):
@@ -68,14 +93,7 @@ class AdministrationFactory(factory.django.DjangoModelFactory):
     invoice_edited = factory.Faker('boolean')
     address = factory.SubFactory(AddressFactory)
     zone_id = factory.LazyAttribute(
-    lambda _: fake.random_element(elements=zones))
-
-# Factory for School Class
-class SchoolClassFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = SchoolClass
-
-    name = 'Test Class'
+        lambda _: fake.random_element(elements=zones))
 
 # Factory for Allergy
 class AllergyFactory(factory.django.DjangoModelFactory):
@@ -97,9 +115,11 @@ class SchoolZoneFactory(factory.django.DjangoModelFactory):
 class HolidaysFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Holidays
-    
+
     zone = factory.SubFactory(SchoolZoneFactory)
     start_date = factory.Faker('date_this_year')
-    end_date = factory.LazyAttribute(lambda obj: obj.start_date + timedelta(days=14))
+    end_date = factory.LazyAttribute(
+        lambda obj: obj.start_date + timedelta(days=14))
     description = factory.Faker('sentence')
-    school_year = factory.LazyAttribute(lambda _: f"{date.today().year}-{date.today().year + 1}")
+    school_year = factory.LazyAttribute(
+        lambda _: f"{date.today().year}-{date.today().year + 1}")

@@ -73,6 +73,12 @@ class SchoolClassSerializer(serializers.ModelSerializer):
         model = SchoolClass
         fields = '__all__'
 
+
+class AllergySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Allergy
+        fields = '__all__'
+
 class SchoolZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = SchoolZone
