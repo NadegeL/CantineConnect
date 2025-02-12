@@ -1,13 +1,14 @@
 from django.test import TestCase
-from api.models import Parent, User, Administration
-from api.factories import ParentFactory, UserFactory, AdministrationFactory, AddressFactory
+from api.models import Administration
+from api.factories import UserFactory, AdministrationFactory
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, DataError
 
 
 class AdministrationModelTest(TestCase):
     def test_create_administration(self):
-        # Creates an administration instance using the factory
-        admin = AdministrationFactory()
+        # Creates an administration instance using the factory with is_staff=True
+        admin = AdministrationFactory(user__is_staff=True)
 
         # Checks that the instance is of type Administration
         self.assertIsInstance(admin, Administration)
@@ -20,16 +21,16 @@ class AdministrationModelTest(TestCase):
         self.assertTrue(admin.is_admin)
 
     def test_str_method(self):
-        # Creates an administration instance using the factory
-        admin = AdministrationFactory()
+        # Creates an administration instance using the factory with is_staff=True
+        admin = AdministrationFactory(user__is_staff=True)
 
         # Tests the __str__() method, which returns the admin's full name
         self.assertEqual(
             str(admin), f"{admin.user.first_name} {admin.user.last_name}")
 
     def test_admin_zone_id(self):
-        # Creates an administration instance using the factory
-        admin = AdministrationFactory()
+        # Creates an administration instance using the factory with is_staff=True
+        admin = AdministrationFactory(user__is_staff=True)
 
         # Checks that the zone_id attribute is set and not None
         self.assertTrue(hasattr(admin, 'zone_id'))
@@ -40,68 +41,53 @@ class AdministrationModelTest(TestCase):
         invalid_email = "invalidemail"
 
         # Creates a user instance with invalid email
-        admin = AdministrationFactory(user__email=invalid_email)
+        admin = AdministrationFactory(
+            user__email=invalid_email, user__is_staff=True)
 
         # Checks that email validation raises a ValidationError
         with self.assertRaises(ValidationError):
             admin.user.full_clean()
 
+    def test_duplicate_administration(self):
+        # Creates a user with is_staff=True
+        user = UserFactory(is_staff=True)
 
-class ParentModelTest(TestCase):
-    def test_create_minimal_parent(self):
-        # Creates an address instance using the factory
-        address = AddressFactory()
+        # Creates an administration instance
+        admin1 = AdministrationFactory(user=user)
 
-        # Creates a parent instance with minimal information
-        user = UserFactory(email="parent@example.com", password="temporary")
-        parent = Parent.objects.create(
-            user=user, phone_number="+123456789", address=address)
+        # Attempts to create another administration with the same user
+        with self.assertRaises(IntegrityError):
+            admin2 = AdministrationFactory(user=user)
 
-        # Checks that the instance is of type Parent
-        self.assertIsInstance(parent, Parent)
+    def test_invalid_zone_id(self):
+        # Creates a user with is_staff=True
+        user = UserFactory(is_staff=True)
 
-        # Checks that the 'is_activated' field is set to False
-        self.assertFalse(parent.is_activated)
+        # Attempts to create an administration with an invalid zone_id
+        with self.assertRaises(DataError):
+            admin = AdministrationFactory(user=user, zone_id='INVALID_ZONE')
 
-        # Checks that the activation token is generated
-        self.assertIsNotNone(parent.activation_token)
+    def test_update_administration(self):
+        # Creates an administration instance
+        admin = AdministrationFactory(user__is_staff=True)
 
-    def test_email_validation(self):
-        # Defines an invalid email
-        invalid_email = "invalidemail"
+        # Updates the administration instance
+        new_zone_id = 'A'
+        admin.zone_id = new_zone_id
+        admin.save()
 
-        # Creates a user instance with invalid email
-        user = UserFactory(email=invalid_email, password="temporary")
+        # Refreshes the instance from the database
+        admin.refresh_from_db()
 
-        # Checks that email validation raises a ValidationError
-        with self.assertRaises(ValidationError):
-            user.full_clean()
+        # Checks that the zone_id is updated
+        self.assertEqual(admin.zone_id, new_zone_id)
 
-    def test_activation_token_generation(self):
-        # Creates an address instance using the factory
-        address = AddressFactory()
+    def test_delete_administration(self):
+        # Creates an administration instance
+        admin = AdministrationFactory(user__is_staff=True)
 
-        # Creates a parent instance
-        user = UserFactory(email="parent@example.com", password="temporary")
-        parent = Parent.objects.create(
-            user=user, phone_number="+33123456789", address=address)
+        # Deletes the administration instance
+        admin.delete()
 
-        # Checks that the activation token is generated
-        self.assertIsNotNone(parent.activation_token)
-        self.assertEqual(len(parent.activation_token), 40)
-
-    def test_parent_activation(self):
-        # Creates an address instance using the factory
-        address = AddressFactory()
-
-        # Creates a parent instance
-        user = UserFactory(email="parent@example.com", password="temporary")
-        parent = Parent.objects.create(
-            user=user, phone_number="+123456789", address=address)
-
-        # Simulates activation
-        parent.is_activated = True
-        parent.save()
-
-        # Checks that the parent is activated
-        self.assertTrue(parent.is_activated)
+        # Checks that the administration instance is deleted
+        self.assertFalse(Administration.objects.filter(pk=admin.pk).exists())

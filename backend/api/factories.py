@@ -30,6 +30,7 @@ class UserFactory(factory.django.DjangoModelFactory):
 
     password = factory.LazyFunction(lambda: make_password('securepassword123'))
     email = FuzzyText(length=150, prefix='user.', suffix='@example.com')
+    is_staff = True
 
 # Factory for the parent
 class ParentFactory(factory.django.DjangoModelFactory):

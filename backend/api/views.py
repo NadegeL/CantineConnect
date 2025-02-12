@@ -10,6 +10,7 @@ from drf_yasg.utils import swagger_auto_schema
 import datetime
 from django.http import HttpResponse
 from django.shortcuts import redirect
+from django.core.exceptions import ValidationError
 
 
 def home(request):
@@ -116,7 +117,13 @@ class AdministrationViewSet(viewsets.ModelViewSet):
         }
     )
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        try:
+            return super().create(request, *args, **kwargs)
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class AddressViewSet(viewsets.ModelViewSet):
     queryset = Address.objects.all()

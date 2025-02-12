@@ -5,6 +5,7 @@ import uuid
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.crypto import get_random_string
 from django.core.validators import MinLengthValidator
+from django.core.exceptions import ValidationError
 
 
 class CustomUserManager(BaseUserManager):
@@ -127,9 +128,18 @@ class Administration(models.Model):
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
 
+    def clean(self):
+        # Checks that the associated user is a staff member
+        if not self.user.is_staff:
+            raise ValidationError(
+                "The user must be a staff member (is_staff=True) to be associated with an administrator.")
+
     def save(self, *args, **kwargs):
-        if self.user and self.user.password:
-            self.user.password = make_password(self.user.password)
+        self.clean()  # Calls up the clean method to validate data
+        if self.user:
+            self.user.is_staff = self.is_admin
+            if self.user.password:
+                self.user.password = make_password(self.user.password)
             self.user.save()
         super().save(*args, **kwargs)
 
