@@ -1,76 +1,77 @@
 from rest_framework import serializers
-from .models import User, Parent, Student, Administration, Address, Allergy, SchoolZone, Holidays
+from .models import (User, Parent, Student, Administration, Address,
+                     SchoolClass, Allergy, SchoolZone, Holidays)
 
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name',
+                  'password', 'is_active', 'is_staff', 'date_joined']
+        extra_kwargs = {'password': {'write_only': True}}
+
+    def create(self, validated_data):
+        user = User.objects.create_user(**validated_data)
+        return user
 
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
         fields = '__all__'
 
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = '__all__'
-
-        extra_kwargs = {
-            'password': {'write_only': True}  # password is write only
-        }
-
-
 class ParentSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    address = AddressSerializer()
+    relation = serializers.CharField(
+        max_length=50, required=False, allow_blank=True)
 
     class Meta:
         model = Parent
         fields = '__all__'
 
-    def create(self, validated_data):  # create a new parent
-        user_data = validated_data.pop('user')
-        address_data = validated_data.pop('address')
-        user = User.objects.create(**user_data)
-        address = Address.objects.create(**address_data)
-        parent = Parent.objects.create(
-            user=user, address=address, **validated_data)
-        return parent
-
-
-class AllergySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Allergy
-        fields = '__all__'
-
 
 class StudentSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    parents = ParentSerializer(many=True)
-    allergies = AllergySerializer(many=True)
+    parents = serializers.PrimaryKeyRelatedField(
+        queryset=Parent.objects.all(), many=True)
+    allergies = serializers.PrimaryKeyRelatedField(
+        queryset=Allergy.objects.all(), many=True, required=False)
 
     class Meta:
         model = Student
         fields = '__all__'
 
     def create(self, validated_data):
-        user_data = validated_data.pop('user')
-        parents_data = validated_data.pop('parents')
-        allergies_data = validated_data.pop('allergies')
-        
-        # Créer l'utilisateur
-        user = User.objects.create(**user_data)
-        
-        # Créer l'étudiant
-        student = Student.objects.create(user=user, **validated_data)
-        
-        # Ajouter les parents
-        for parent_data in parents_data:
-            student.parents.add(parent_data)
-            
-        # Ajouter les allergies
-        for allergy_data in allergies_data:
-            student.allergies.add(allergy_data)
-            
+        parents_data = validated_data.pop('parents', [])
+        allergies_data = validated_data.pop('allergies', [])
+
+        student = Student.objects.create(**validated_data)
+        student.parents.set(parents_data)
+        student.allergies.set(allergies_data)
         return student
+
+
+class AdministrationSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+
+    class Meta:
+        model = Administration
+        fields = '__all__'
+
+    def validate_user(self, value):
+        if not value.is_staff:
+            raise serializers.ValidationError(
+                "The user must have staff status to be an administrator.")
+        return value
+
+    def create(self, validated_data):
+        user = validated_data.pop('user')
+        administration = Administration.objects.create(
+            user=user, **validated_data)
+        return administration
+
+
+class SchoolClassSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SchoolClass
+        fields = '__all__'
 
 class SchoolZoneSerializer(serializers.ModelSerializer):
     class Meta:

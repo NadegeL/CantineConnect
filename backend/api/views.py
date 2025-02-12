@@ -1,16 +1,19 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from .models import (User, Parent, Student, Administration, Address, SchoolClass,
+                     Allergy, SchoolZone, Holidays)
+from .serializers import (UserSerializer, ParentSerializer, StudentSerializer, AdministrationSerializer,
+                          AddressSerializer, SchoolClassSerializer, AllergySerializer,
+                          SchoolZoneSerializer, HolidaysSerializer)
 from drf_yasg.utils import swagger_auto_schema
 import datetime
-from .models import (User, Parent, Student, Administration, 
-                    Allergy, SchoolZone, Holidays)
-from .serializers import (UserSerializer, ParentSerializer, StudentSerializer, 
-                         AdministrationSerializer, AllergySerializer, 
-                         SchoolZoneSerializer, HolidaysSerializer)
+from django.http import HttpResponse
+from django.shortcuts import redirect
+
+
 def home(request):
     return HttpResponse("Welcome to the CantineConnect API")
-
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -23,13 +26,12 @@ class UserViewSet(viewsets.ModelViewSet):
         responses={201: UserSerializer()},
         examples={
             'application/json': {
-                'email': 'user@example.com',
+                'email': 'John_Doe@example.com',
                 'first_name': 'John',
                 'last_name': 'Doe',
                 'is_active': True,
                 'is_superuser': False,
                 'is_staff': True,
-                'username': 'john_doe',
                 'password': 'securepassword123',
                 'last_login': datetime.datetime.now().isoformat(),
                 'date_joined': datetime.datetime.now().isoformat(),
@@ -38,7 +40,6 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
-
 
 class ParentViewSet(viewsets.ModelViewSet):
     queryset = Parent.objects.all()
@@ -67,7 +68,6 @@ class ParentViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
-
 
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
@@ -117,7 +117,15 @@ class AdministrationViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
-    
+
+class AddressViewSet(viewsets.ModelViewSet):
+    queryset = Address.objects.all()
+    serializer_class = AddressSerializer
+
+class SchoolClassViewSet(viewsets.ModelViewSet):
+    queryset = SchoolClass.objects.all()
+    serializer_class = SchoolClassSerializer
+
 class AllergyViewSet(viewsets.ModelViewSet):
     queryset = Allergy.objects.all()
     serializer_class = AllergySerializer
@@ -190,4 +198,4 @@ class HolidaysViewSet(viewsets.ModelViewSet):
         return Response(
             {'message': 'Pas de vacances prévues'}, 
             status=status.HTTP_404_NOT_FOUND
-        )
+        )    
