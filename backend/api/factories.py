@@ -1,6 +1,6 @@
 import factory
 from factory.fuzzy import FuzzyText
-from api.models import User, Parent, Student, Administration, Address
+from api.models import User, Parent, Student, Administration, Address, SchoolClass
 from django.contrib.auth.hashers import make_password
 from faker import Faker
 
@@ -69,3 +69,10 @@ class AdministrationFactory(factory.django.DjangoModelFactory):
     address = factory.SubFactory(AddressFactory)
     zone_id = factory.LazyAttribute(
     lambda _: fake.random_element(elements=zones))
+
+# Factory for School Class
+class SchoolClassFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = SchoolClass
+
+    name = 'Test Class'
