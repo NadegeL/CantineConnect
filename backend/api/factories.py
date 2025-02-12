@@ -1,6 +1,6 @@
 import factory
 from factory.fuzzy import FuzzyText
-from api.models import User, Parent, Student, Administration, Address, SchoolClass
+from api.models import User, Parent, Student, Administration, Address, SchoolClass, Allergy, Holidays, SchoolZone
 from django.contrib.auth.hashers import make_password
 from faker import Faker
 
@@ -76,3 +76,30 @@ class SchoolClassFactory(factory.django.DjangoModelFactory):
         model = SchoolClass
 
     name = 'Test Class'
+
+# Factory for Allergy
+class AllergyFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Allergy
+
+    name = factory.Sequence(lambda n: f'Allergie_{n}')
+    severity = factory.Iterator(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
+    description = factory.Faker('text', max_nb_chars=200)
+
+# Factory for School Zone
+class SchoolZoneFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = SchoolZone
+
+    name = factory.Iterator(['A', 'B', 'C'])
+
+# Factory for Holidays
+class HolidaysFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Holidays
+    
+    zone = factory.SubFactory(SchoolZoneFactory)
+    start_date = factory.Faker('date_this_year')
+    end_date = factory.LazyAttribute(lambda obj: obj.start_date + timedelta(days=14))
+    description = factory.Faker('sentence')
+    school_year = factory.LazyAttribute(lambda _: f"{date.today().year}-{date.today().year + 1}")

@@ -1,8 +1,6 @@
 from rest_framework import serializers
-from .models import User, Parent, Student, Administration, Address, SchoolClass, Allergy
-
-from rest_framework import serializers
-from .models import User
+from .models import (User, Parent, Student, Administration, Address,
+                     SchoolClass, Allergy, SchoolZone, Holidays)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -16,6 +14,10 @@ class UserSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         return user
 
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = '__all__'
 
 class ParentSerializer(serializers.ModelSerializer):
     relation = serializers.CharField(
@@ -66,13 +68,32 @@ class AdministrationSerializer(serializers.ModelSerializer):
         return administration
 
 
-class AddressSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Address
-        fields = '__all__'
-
-
 class SchoolClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = SchoolClass
         fields = '__all__'
+
+class SchoolZoneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SchoolZone
+        fields = '__all__'
+
+
+class AdministrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Administration
+        fields = '__all__'
+
+
+class HolidaysSerializer(serializers.ModelSerializer):
+    zone = SchoolZoneSerializer()
+
+    class Meta:
+        model = Holidays
+        fields = '__all__'
+
+    def create(self, validated_data):
+        zone_data = validated_data.pop('zone')
+        zone = SchoolZone.objects.create(**zone_data)
+        holidays = Holidays.objects.create(zone=zone, **validated_data)
+        return holidays

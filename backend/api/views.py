@@ -1,6 +1,11 @@
-from rest_framework import viewsets
-from .models import User, Parent, Student, Administration, Address, SchoolClass
-from .serializers import UserSerializer, ParentSerializer, StudentSerializer, AdministrationSerializer, AddressSerializer, SchoolClassSerializer
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from .models import (User, Parent, Student, Administration, Address, SchoolClass,
+                     Allergy, SchoolZone, Holidays)
+from .serializers import (UserSerializer, ParentSerializer, StudentSerializer, AdministrationSerializer,
+                          AddressSerializer, SchoolClassSerializer, AllergySerializer,
+                          SchoolZoneSerializer, HolidaysSerializer)
 from drf_yasg.utils import swagger_auto_schema
 import datetime
 from django.http import HttpResponse
@@ -9,7 +14,6 @@ from django.shortcuts import redirect
 
 def home(request):
     return HttpResponse("Welcome to the CantineConnect API")
-
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -36,7 +40,6 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
-
 
 class ParentViewSet(viewsets.ModelViewSet):
     queryset = Parent.objects.all()
@@ -65,7 +68,6 @@ class ParentViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
-
 
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
@@ -116,12 +118,84 @@ class AdministrationViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
-
 class AddressViewSet(viewsets.ModelViewSet):
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
 
-
 class SchoolClassViewSet(viewsets.ModelViewSet):
     queryset = SchoolClass.objects.all()
     serializer_class = SchoolClassSerializer
+
+class AllergyViewSet(viewsets.ModelViewSet):
+    queryset = Allergy.objects.all()
+    serializer_class = AllergySerializer
+
+    @swagger_auto_schema(
+        operation_description="Liste toutes les allergies",
+        operation_summary="Liste des allergies",
+        responses={200: AllergySerializer(many=True)}
+    )
+    def list(self, request):
+        return super().list(request)
+
+    @action(detail=True, methods=['get'])
+    def students_with_allergy(self, request, pk=None):
+        """Obtenir tous les étudiants ayant une allergie spécifique"""
+        try:
+            allergy = self.get_object()
+            students = Student.objects.filter(allergies=allergy)
+            serializer = StudentSerializer(students, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+class SchoolZoneViewSet(viewsets.ModelViewSet):
+    queryset = SchoolZone.objects.all()
+    serializer_class = SchoolZoneSerializer
+
+    @action(detail=True, methods=['get'])
+    def get_holidays(self, request, pk=None):
+        """Obtenir toutes les vacances pour une zone spécifique"""
+        try:
+            zone = self.get_object()
+            holidays = Holidays.objects.filter(zone=zone)
+            serializer = HolidaysSerializer(holidays, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+class HolidaysViewSet(viewsets.ModelViewSet):
+    queryset = Holidays.objects.all()
+    serializer_class = HolidaysSerializer
+
+    @action(detail=False, methods=['get'])
+    def current_holidays(self, request):
+        """Obtenir les vacances en cours"""
+        today = datetime.date.today()
+        current_holidays = Holidays.objects.filter(
+            start_date__lte=today,
+            end_date__gte=today
+        )
+        serializer = self.get_serializer(current_holidays, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def upcoming_holidays(self, request):
+        """Obtenir les prochaines vacances"""
+        today = datetime.date.today()
+        upcoming = Holidays.objects.filter(
+            start_date__gt=today
+        ).order_by('start_date').first()
+        if upcoming:
+            serializer = self.get_serializer(upcoming)
+            return Response(serializer.data)
+        return Response(
+            {'message': 'Pas de vacances prévues'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )    
