@@ -11,6 +11,7 @@ import datetime
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.core.exceptions import ValidationError
+from .services.holidays_service import HolidaysService
 
 
 def home(request):
@@ -205,4 +206,32 @@ class HolidaysViewSet(viewsets.ModelViewSet):
         return Response(
             {'message': 'Pas de vacances prévues'}, 
             status=status.HTTP_404_NOT_FOUND
-        )    
+        )
+
+    @action(detail=False, methods=['post'])
+    def sync_with_api(self, request):
+        """Synchronise avec data.gouv.fr"""
+        try:
+            service = HolidaysService()
+            for zone_choice in SchoolZone.ZONE_CHOICES:
+                zone_code = zone_choice[0]
+                zone = SchoolZone.objects.get(name=zone_code)
+                holidays = service.get_holidays(zone=zone_code)
+                
+                for holiday_data in holidays:
+                    Holidays.objects.update_or_create(
+                        zone=zone,
+                        start_date=holiday_data['start_date'],
+                        end_date=holiday_data['end_date'],
+                        defaults={
+                            'description': holiday_data['description'],
+                            'school_year': holiday_data['school_year']
+                        }
+                    )
+            
+            return Response({"message": "Synchronisation réussie"})
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
