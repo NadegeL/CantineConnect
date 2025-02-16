@@ -82,6 +82,12 @@ class StudentFactory(factory.django.DjangoModelFactory):
         for allergy in extracted:
             self.allergies.add(allergy)
 
+# Factory for School Zone
+class SchoolZoneFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = SchoolZone
+
+    name = factory.Iterator(['A', 'B', 'C'])
 
 # Factory for administration
 class AdministrationFactory(factory.django.DjangoModelFactory):
@@ -93,8 +99,7 @@ class AdministrationFactory(factory.django.DjangoModelFactory):
     is_admin = True
     invoice_edited = factory.Faker('boolean')
     address = factory.SubFactory(AddressFactory)
-    zone_id = factory.LazyAttribute(
-        lambda _: fake.random_element(elements=zones))
+    zone = factory.SubFactory(SchoolZoneFactory)
 
 # Factory for Allergy
 class AllergyFactory(factory.django.DjangoModelFactory):
@@ -104,13 +109,6 @@ class AllergyFactory(factory.django.DjangoModelFactory):
     name = factory.Sequence(lambda n: f'Allergie_{n}')
     severity = factory.Iterator(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
     description = factory.Faker('text', max_nb_chars=200)
-
-# Factory for School Zone
-class SchoolZoneFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = SchoolZone
-
-    name = factory.Iterator(['A', 'B', 'C'])
 
 # Factory for Holidays
 class HolidaysFactory(factory.django.DjangoModelFactory):

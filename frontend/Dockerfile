@@ -10,9 +10,6 @@ RUN apk update && apk upgrade
 # Copy the package.json and yarn.lock files
 COPY package.json yarn.lock ./
 
-# Install unocss
-RUN yarn add -D unocss
-
 # Install the base dependencies
 RUN yarn install
 

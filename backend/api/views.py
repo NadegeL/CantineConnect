@@ -1,6 +1,8 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import serializers
+from django.db import IntegrityError
 from .models import (User, Parent, Student, Administration, Address, SchoolClass,
                      Allergy, SchoolZone, Holidays)
 from .serializers import (UserSerializer, ParentSerializer, StudentSerializer, AdministrationSerializer,
@@ -17,6 +19,7 @@ from .services.holidays_service import HolidaysService
 def home(request):
     return HttpResponse("Welcome to the CantineConnect API")
 
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -26,22 +29,10 @@ class UserViewSet(viewsets.ModelViewSet):
         operation_description="Create a new user",
         operation_summary="Create a user",
         responses={201: UserSerializer()},
-        examples={
-            'application/json': {
-                'email': 'John_Doe@example.com',
-                'first_name': 'John',
-                'last_name': 'Doe',
-                'is_active': True,
-                'is_superuser': False,
-                'is_staff': True,
-                'password': 'securepassword123',
-                'last_login': datetime.datetime.now().isoformat(),
-                'date_joined': datetime.datetime.now().isoformat(),
-            }
-        }
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
+
 
 class ParentViewSet(viewsets.ModelViewSet):
     queryset = Parent.objects.all()
@@ -70,6 +61,7 @@ class ParentViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
+
 
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
@@ -113,11 +105,13 @@ class AdministrationViewSet(viewsets.ModelViewSet):
                     'postal_code': '75000',
                     'country': 'France'
                 },
-                'zone_id': 'Z123'
+                'zone': 'A'
             }
         }
     )
     def create(self, request, *args, **kwargs):
+        if Administration.objects.exists():
+            return Response({"error": "Un administrateur existe déjà."}, status=status.HTTP_403_FORBIDDEN)
         try:
             return super().create(request, *args, **kwargs)
         except ValidationError as e:
@@ -126,13 +120,16 @@ class AdministrationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+
 class AddressViewSet(viewsets.ModelViewSet):
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
 
+
 class SchoolClassViewSet(viewsets.ModelViewSet):
     queryset = SchoolClass.objects.all()
     serializer_class = SchoolClassSerializer
+
 
 class AllergyViewSet(viewsets.ModelViewSet):
     queryset = Allergy.objects.all()
@@ -156,9 +153,10 @@ class AllergyViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         except Exception as e:
             return Response(
-                {'error': str(e)}, 
+                {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
 
 class SchoolZoneViewSet(viewsets.ModelViewSet):
     queryset = SchoolZone.objects.all()
@@ -174,9 +172,10 @@ class SchoolZoneViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         except Exception as e:
             return Response(
-                {'error': str(e)}, 
+                {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
 
 class HolidaysViewSet(viewsets.ModelViewSet):
     queryset = Holidays.objects.all()
@@ -204,7 +203,7 @@ class HolidaysViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(upcoming)
             return Response(serializer.data)
         return Response(
-            {'message': 'Pas de vacances prévues'}, 
+            {'message': 'Pas de vacances prévues'},
             status=status.HTTP_404_NOT_FOUND
         )
 
@@ -217,7 +216,7 @@ class HolidaysViewSet(viewsets.ModelViewSet):
                 zone_code = zone_choice[0]
                 zone = SchoolZone.objects.get(name=zone_code)
                 holidays = service.get_holidays(zone=zone_code)
-                
+
                 for holiday_data in holidays:
                     Holidays.objects.update_or_create(
                         zone=zone,
@@ -228,10 +227,10 @@ class HolidaysViewSet(viewsets.ModelViewSet):
                             'school_year': holiday_data['school_year']
                         }
                     )
-            
+
             return Response({"message": "Synchronisation réussie"})
         except Exception as e:
             return Response(
-                {"error": str(e)}, 
+                {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

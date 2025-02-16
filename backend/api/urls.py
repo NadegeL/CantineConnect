@@ -25,6 +25,5 @@ router.register(r'school-zones', SchoolZoneViewSet)
 router.register(r'holidays', HolidaysViewSet)
 
 urlpatterns = [
-    path('', home, name='home'),
     path('', include(router.urls)),
 ]
