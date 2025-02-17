@@ -3,21 +3,21 @@
     <h1>Connexion Administration</h1>
     <form @submit.prevent="login">
       <div class="form-group">
-        <label for="username">Nom d'utilisateur</label>
-        <input id="username" v-model="username" type="text" required>
+        <label for="username">Email</label>
+        <input id="username" v-model="username" type="email" required>
       </div>
       <div class="form-group">
         <label for="password">Mot de passe</label>
         <div class="password-input">
-          <input 
-            id="password" 
-            v-model="password" 
-            :type="showPassword ? 'text' : 'password'" 
+          <input
+            id="password"
+            v-model="password"
+            :type="showPassword ? 'text' : 'password'"
             required
           >
-          <button 
-            type="button" 
-            @click="togglePasswordVisibility" 
+          <button
+            type="button"
+            @click="togglePasswordVisibility"
             class="toggle-password"
           >
             {{ showPassword ? 'Cacher' : 'Afficher' }}
@@ -54,21 +54,17 @@ export default {
       this.isLoading = true;
       this.errorMessage = '';
       try {
-        console.log('Attempting login');
         const response = await api.post('token/', {
           json: {
-            username: this.username,
+            email: this.username,
             password: this.password,
           }
         }).json();
 
-        console.log('Login response:', response);
-
         if (response.access) {
           localStorage.setItem('token', response.access);
           localStorage.setItem('userType', 'admin');
-          console.log('Login successful, redirecting to AdminDashboard');
-          await this.$router.push('/admin');
+          this.$router.push('/admin');
         } else {
           throw new Error('Token non reçu');
         }

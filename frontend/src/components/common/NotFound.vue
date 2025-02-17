@@ -15,8 +15,8 @@ export default {
 .not-found {
   text-align: center;
   margin-top: 50px;
-  color: #ff6f61;
-  background-color: #fff3e0;
+  color: #436F8A;
+  background-color: #E3E3E3;
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -24,11 +24,11 @@ export default {
 
 .not-found h1 {
   font-size: 2.5em;
-  color: #ff5722;
+  color: #436F8A;
 }
 
 .not-found p {
   font-size: 1.2em;
-  color: #ff8a65;
+  color: #3A6351;
 }
 </style>

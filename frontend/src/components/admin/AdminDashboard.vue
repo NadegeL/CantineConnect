@@ -1,153 +1,197 @@
 <template>
-  <div class="admin-login">
-    <h1>Connexion Administration</h1>
-    <form @submit.prevent="login">
-      <div class="form-group">
-        <label for="username">Nom d'utilisateur</label>
-        <input id="username" v-model="username" type="text" required>
-      </div>
-      <div class="form-group">
-        <label for="password">Mot de passe</label>
-        <div class="password-input">
-          <input 
-            id="password" 
-            v-model="password" 
-            :type="showPassword ? 'text' : 'password'" 
-            required
-          >
-          <button 
-            type="button" 
-            @click="togglePasswordVisibility" 
-            class="toggle-password"
-          >
-            {{ showPassword ? 'Cacher' : 'Afficher' }}
-          </button>
+  <div class="admin-dashboard">
+    <header class="header">
+      <h1>Tableau de bord administrateur</h1>
+      <nav>
+        <button class="btn-primary">Gérer les repas</button>
+        <button class="btn-primary">Gérer les élèves</button>
+        <button class="btn-primary">Rapports</button>
+        <button @click="logout" class="btn-logout">Déconnexion</button>
+      </nav>
+    </header>
+
+    <main class="dashboard-content">
+      <section class="stats-section">
+        <h2>Statistiques</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <h3>Repas servis aujourd'hui</h3>
+            <p class="stat-number">150</p>
+          </div>
+          <div class="stat-card">
+            <h3>Élèves inscrits</h3>
+            <p class="stat-number">500</p>
+          </div>
+          <div class="stat-card">
+            <h3>Allergies signalées</h3>
+            <p class="stat-number warning">25</p>
+          </div>
         </div>
-      </div>
-      <button type="submit" class="submit-btn" :disabled="isLoading">
-        {{ isLoading ? 'Connexion...' : 'Se connecter' }}
-      </button>
-    </form>
-    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+      </section>
+
+      <section class="actions-section">
+        <h2>Actions rapides</h2>
+        <div class="action-buttons">
+          <button class="btn-secondary">Ajouter un repas</button>
+          <button class="btn-secondary">Inscrire un élève</button>
+          <button class="btn-secondary">Générer un rapport</button>
+          <button class="btn-secondary">Nouvel administrateur</button>
+          <button class="btn-secondary">Ajouter un parent</button>
+          <button class="btn-secondary">Corriger les données</button>
+        </div>
+      </section>
+
+      <section class="calendar-section">
+        <h2>Gestion du calendrier</h2>
+        <div class="calendar-actions">
+          <button class="btn-secondary">Définir les vacances</button>
+          <button class="btn-secondary">Fermetures exceptionnelles</button>
+        </div>
+      </section>
+    </main>
   </div>
 </template>
 
 <script>
-import api from '@/http-common';
-
 export default {
-  name: 'AdminLogin',
-  data() {
-    return {
-      username: '',
-      password: '',
-      showPassword: false,
-      isLoading: false,
-      errorMessage: '',
-    };
-  },
+  name: 'AdminDashboard',
   methods: {
-    togglePasswordVisibility() {
-      this.showPassword = !this.showPassword;
-    },
-    async login() {
-      this.isLoading = true;
-      this.errorMessage = '';
-      try {
-        const response = await api.post('api/token/', {
-          json: {
-            username: this.username,
-            password: this.password,
-          }
-        }).json();
-
-        if (response.access) {
-          localStorage.setItem('token', response.access);
-          localStorage.setItem('userType', 'admin');
-          this.$router.push('/admin');
-        } else {
-          throw new Error('Token non reçu');
-        }
-      } catch (error) {
-        console.error('Erreur lors de la connexion:', error);
-        this.errorMessage = "Nom d'utilisateur ou mot de passe incorrect.";
-      } finally {
-        this.isLoading = false;
-      }
-    },
-  },
-};
+    logout() {
+      // Supprimer le token d'authentification du stockage local
+      localStorage.removeItem('authToken');
+      
+      // Rediriger vers la page d'accueil
+      this.$router.push('/');
+    }
+  }
+}
 </script>
 
 <style scoped>
-.admin-login {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
+.admin-dashboard {
+  background-color: #E3E3E3;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+.header {
+  background-color: #436F8A;
+  color: #FFFFFF;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-primary, .btn-logout {
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-primary {
+  background-color: #FFB347;
+  color: #FFFFFF;
+}
+
+.btn-primary:hover {
+  background-color: #FFA500;
+}
+
+.btn-logout {
+  background-color: #FF6F61;
+  color: #FFFFFF;
+}
+
+.btn-logout:hover {
+  background-color: #FF5722;
+}
+
+.dashboard-content {
+  padding: 2rem;
+  display: grid;
+  gap: 2rem;
+}
+
+.stats-section, .actions-section, .calendar-section {
   background-color: #FFFFFF;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-h1 {
-  color: #436F8A;
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  background-color: #AEDFF7;
+  padding: 1rem;
+  border-radius: 6px;
   text-align: center;
-  margin-bottom: 20px;
 }
 
-.form-group {
-  margin-bottom: 15px;
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #3A6351;
 }
 
-label {
-  display: block;
-  margin-bottom: 5px;
-  color: #333;
+.warning {
+  color: #FF6F61;
 }
 
-input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #E3E3E3;
-  border-radius: 4px;
-}
-
-.password-input {
+.action-buttons, .calendar-actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-.toggle-password {
-  background-color: #FFB347;
-  color: white;
+.btn-secondary {
+  background-color: #A8D5BA;
+  color: #3A6351;
   border: none;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 0 4px 4px 0;
-}
-
-.submit-btn {
-  width: 100%;
-  padding: 10px;
-  background-color: #436F8A;
-  color: white;
-  border: none;
+  padding: 0.5rem 1rem;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 16px;
+  transition: background-color 0.3s;
 }
 
-.submit-btn:hover:not(:disabled) {
-  background-color: #365870;
+.btn-secondary:hover {
+  background-color: #8BC4A5;
 }
 
-.submit-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+h2 {
+  color: #436F8A;
+  margin-bottom: 1rem;
 }
 
-.error-message {
-  color: #d9534f;
-  text-align: center;
-  margin-top: 10px;
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  nav {
+    margin-top: 1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

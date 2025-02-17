@@ -1,10 +1,11 @@
 from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.contrib.auth.hashers import make_password
 import uuid
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.crypto import get_random_string
-from django.core.validators import MinLengthValidator
+from django.core.validators import MinLengthValidator, RegexValidator
 from django.core.exceptions import ValidationError
 
 
@@ -56,17 +57,49 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
 # Address template
+
+
 class Address(models.Model):
     address_line_1 = models.CharField(max_length=255)
     address_line_2 = models.CharField(max_length=255, blank=True, null=True)
     city = models.CharField(max_length=100)
-    postal_code = models.CharField(max_length=20)
+    postal_code = models.CharField(
+        max_length=20,
+        validators=[
+            RegexValidator(
+                # Valide un code postal entre 4 et 10 chiffres
+                regex=r'^\d{4,10}$',
+                message="Le code postal doit contenir entre 4 et 10 chiffres."
+            )
+        ]
+    )
     country = models.CharField(max_length=100)
 
     def __str__(self):
         return f"{self.address_line_1}, {self.city}, {self.country}"
 
+    def clean(self):
+        """
+        Validation personnalisée pour vérifier la cohérence des champs.
+        """
+        if not self.postal_code.isdigit():
+            raise ValidationError(
+                {'postal_code': "Le code postal doit être uniquement numérique."})
+
+        if len(self.country) < 3:
+            raise ValidationError(
+                {'country': "Le nom du pays doit comporter au moins 3 caractères."})
+
+    def save(self, *args, **kwargs):
+        """
+        Appelle `clean()` avant de sauvegarder les données.
+        """
+        self.full_clean()  # Appelle clean() et d'autres validations
+        super().save(*args, **kwargs)
+
 # Parent model
+
+
 class Parent(models.Model):
     COUNTRY_CHOICES = [
         ('FR', 'France'),
@@ -93,6 +126,8 @@ class Parent(models.Model):
         super().save(*args, **kwargs)
 
 # SchoolClass model
+
+
 class SchoolClass(models.Model):
     name = models.CharField(max_length=50, unique=True)
     is_active = models.BooleanField(default=True)
@@ -101,6 +136,8 @@ class SchoolClass(models.Model):
         return self.name
 
 # Student model
+
+
 class Student(models.Model):
     first_name = models.CharField(max_length=30, blank=False)
     last_name = models.CharField(max_length=30, blank=False)
@@ -135,13 +172,15 @@ class SchoolZone(models.Model):
 
     def __str__(self):
         return self.get_name_display()
-    
+
     def clean(self):
         if self.name not in ['A', 'B', 'C']:
             raise ValidationError(
                 "Le nom de la zone doit être 'A', 'B' ou 'C'.")
 
 # Administration model
+
+
 class Administration(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_admin = models.BooleanField(default=True)
@@ -156,7 +195,6 @@ class Administration(models.Model):
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
-
 
     def clean(self):
         super().clean()
