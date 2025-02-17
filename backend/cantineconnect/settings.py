@@ -1,9 +1,13 @@
 from datetime import timedelta
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Charger les variables d'environnement depuis .env
+load_dotenv()
 
 # Securing sensitive keys via environment variables
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'changecetsecret')

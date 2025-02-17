@@ -14,7 +14,8 @@ class CustomUserManager(BaseUserManager):
         if not email:
             raise ValueError('E-mail address is mandatory')
         email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
+        extra_fields.setdefault('username', email)  # Set username to email
+        user = self.model(email=email, username=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -29,6 +30,8 @@ class CustomUserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, max_length=254)
+    username = models.CharField(
+        unique=True, max_length=254)  # Add username field
     first_name = models.CharField(max_length=30, blank=True)
     last_name = models.CharField(max_length=30, blank=True)
     is_active = models.BooleanField(default=True)
@@ -57,8 +60,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
 # Address template
-
-
 class Address(models.Model):
     address_line_1 = models.CharField(max_length=255)
     address_line_2 = models.CharField(max_length=255, blank=True, null=True)
@@ -98,8 +99,6 @@ class Address(models.Model):
         super().save(*args, **kwargs)
 
 # Parent model
-
-
 class Parent(models.Model):
     COUNTRY_CHOICES = [
         ('FR', 'France'),
@@ -126,8 +125,6 @@ class Parent(models.Model):
         super().save(*args, **kwargs)
 
 # SchoolClass model
-
-
 class SchoolClass(models.Model):
     name = models.CharField(max_length=50, unique=True)
     is_active = models.BooleanField(default=True)
@@ -136,8 +133,6 @@ class SchoolClass(models.Model):
         return self.name
 
 # Student model
-
-
 class Student(models.Model):
     first_name = models.CharField(max_length=30, blank=False)
     last_name = models.CharField(max_length=30, blank=False)
@@ -179,8 +174,6 @@ class SchoolZone(models.Model):
                 "Le nom de la zone doit être 'A', 'B' ou 'C'.")
 
 # Administration model
-
-
 class Administration(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_admin = models.BooleanField(default=True)
