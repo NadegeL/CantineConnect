@@ -3,6 +3,12 @@ from .models import (User, Parent, Student, Administration, Address,
                      SchoolClass, Allergy, SchoolZone, Holidays)
 
 
+class SchoolZoneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SchoolZone
+        fields = '__all__'
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -11,13 +17,27 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
+        # Extrait is_staff des données validées
+        is_staff = validated_data.pop('is_staff', False)
+        user = User.objects.create_user(**validated_data, is_staff=is_staff)
         return user
+
+    def validate_email(self, value):
+        if not value:
+            raise serializers.ValidationError("This field is mandatory.")
+        return value
+
+    def validate_password(self, value):
+        if not value:
+            raise serializers.ValidationError("This field is mandatory.")
+        return value
+    
 
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
         fields = '__all__'
+
 
 class ParentSerializer(serializers.ModelSerializer):
     relation = serializers.CharField(
@@ -50,6 +70,10 @@ class StudentSerializer(serializers.ModelSerializer):
 
 class AdministrationSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    address = serializers.PrimaryKeyRelatedField(
+        queryset=Address.objects.all())
+    zone = serializers.PrimaryKeyRelatedField(
+        queryset=SchoolZone.objects.all())  # Uses zone ID
 
     class Meta:
         model = Administration
@@ -58,13 +82,13 @@ class AdministrationSerializer(serializers.ModelSerializer):
     def validate_user(self, value):
         if not value.is_staff:
             raise serializers.ValidationError(
-                "The user must have staff status to be an administrator.")
+                "The user must have staff status to be an administrator."
+            )
         return value
 
     def create(self, validated_data):
-        user = validated_data.pop('user')
-        administration = Administration.objects.create(
-            user=user, **validated_data)
+        # Create an administration with validated data
+        administration = Administration.objects.create(**validated_data)
         return administration
 
 
@@ -79,17 +103,6 @@ class AllergySerializer(serializers.ModelSerializer):
         model = Allergy
         fields = '__all__'
 
-class SchoolZoneSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SchoolZone
-        fields = '__all__'
-
-
-class AdministrationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Administration
-        fields = '__all__'
-
 
 class HolidaysSerializer(serializers.ModelSerializer):
     zone = SchoolZoneSerializer()
@@ -100,6 +113,6 @@ class HolidaysSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         zone_data = validated_data.pop('zone')
-        zone = SchoolZone.objects.create(**zone_data)
+        zone, _ = SchoolZone.objects.get_or_create(**zone_data)
         holidays = Holidays.objects.create(zone=zone, **validated_data)
         return holidays

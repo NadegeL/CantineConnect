@@ -117,32 +117,6 @@ class Student(models.Model):
             [f"{parent.user.first_name} {parent.user.last_name}" for parent in self.parents.all()])
         return f"{self.first_name} {self.last_name} - {self.grade.name if self.grade else 'No Class'} (Parents: {parent_names})"
 
-# Administration model
-class Administration(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    is_admin = models.BooleanField(default=True)
-    invoice_edited = models.BooleanField(default=False)
-    address = models.ForeignKey(Address, on_delete=models.CASCADE)
-    zone_id = models.CharField(max_length=10)
-
-    def __str__(self):
-        return f"{self.user.first_name} {self.user.last_name}"
-
-    def clean(self):
-        # Checks that the associated user is a staff member
-        if not self.user.is_staff:
-            raise ValidationError(
-                "The user must be a staff member (is_staff=True) to be associated with an administrator.")
-
-    def save(self, *args, **kwargs):
-        self.clean()  # Calls up the clean method to validate data
-        if self.user:
-            self.user.is_staff = self.is_admin
-            if self.user.password:
-                self.user.password = make_password(self.user.password)
-            self.user.save()
-        super().save(*args, **kwargs)
-
 
 class SchoolZone(models.Model):
     """Représente une zone scolaire"""
@@ -161,6 +135,46 @@ class SchoolZone(models.Model):
 
     def __str__(self):
         return self.get_name_display()
+    
+    def clean(self):
+        if self.name not in ['A', 'B', 'C']:
+            raise ValidationError(
+                "Le nom de la zone doit être 'A', 'B' ou 'C'.")
+
+# Administration model
+class Administration(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    is_admin = models.BooleanField(default=True)
+    invoice_edited = models.BooleanField(default=False)
+    address = models.ForeignKey('Address', on_delete=models.CASCADE)
+    zone = models.ForeignKey(
+        SchoolZone,
+        on_delete=models.CASCADE,
+        related_name="administrations",
+        verbose_name="Nom de la zone"
+    )
+
+    def __str__(self):
+        return f"{self.user.first_name} {self.user.last_name}"
+
+
+    def clean(self):
+        super().clean()
+        if self.zone:
+            self.zone.full_clean()
+        # Checks that the associated user is a staff member
+        if not self.user.is_staff:
+            raise ValidationError(
+                "The user must be a staff member (is_staff=True) to be associated with an administrator.")
+
+    def save(self, *args, **kwargs):
+        self.clean()  # Calls up the clean method to validate data
+        if self.user:
+            self.user.is_staff = self.is_admin
+            if self.user.password:
+                self.user.password = make_password(self.user.password)
+            self.user.save()
+        super().save(*args, **kwargs)
 
 
 class Holidays(models.Model):
