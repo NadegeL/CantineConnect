@@ -27,11 +27,13 @@
       <button type="submit" class="submit-btn">Créer l'administrateur</button>
     </form>
     <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+    <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
   </div>
 </template>
 
 <script>
 import api from '@/http-common';
+import { checkAdminExists } from '@/router'; // Import verification function
 
 export default {
   name: 'CreateAdmin',
@@ -58,6 +60,7 @@ export default {
       },
       schoolZones: [],
       errorMessage: '',
+      successMessage: '',
     };
   },
   async created() {
@@ -66,7 +69,7 @@ export default {
   methods: {
     async fetchSchoolZones() {
       try {
-        const response = await api.get('school-zones/').then((response) => response.json());
+        const response = await api.get('school-zones/').json();
         this.schoolZones = response;
       } catch (error) {
         this.errorMessage = 'Erreur lors de la récupération des zones scolaires.';
@@ -81,8 +84,9 @@ export default {
 
       try {
         this.errorMessage = '';
+        this.successMessage = '';
 
-        const userResponse = await api.post('users/', { 
+        const userResponse = await api.post('users/', {
           json: {
             username: this.userData.email.split('@')[0],
             email: this.userData.email,
@@ -109,12 +113,20 @@ export default {
 
         console.log('Données envoyées pour créer l\'administrateur:', adminData);
 
-        const adminResponse = await api.post('administrations/', { json: adminData });
-        console.log('Administrateur créé avec succès:', adminResponse);
+        await api.post('administrations/', { json: adminData });
+        console.log('Administrateur créé avec succès');
 
-        this.$router.push('/').catch(err => {
-          console.error('Erreur de redirection:', err);
-        });
+        this.successMessage = "L'administrateur a été créé avec succès. Redirection vers la page de connexion...";
+
+        // Rerun administrator existence check
+        await checkAdminExists();
+
+        setTimeout(() => {
+          this.$router.push('/admin/login').catch(err => {
+            console.error('Erreur de redirection:', err);
+            this.errorMessage = "Erreur lors de la redirection. Veuillez vous connecter manuellement.";
+          });
+        }, 3000);
       } catch (error) {
         if (error.response) {
           const errorData = await error.response.json();
@@ -174,5 +186,11 @@ input, select {
 .error-message {
   color: #FF6F61;
   margin-top: 10px;
+}
+
+.success-message {
+  color: #3A6351;
+  margin-top: 10px;
+  font-weight: bold;
 }
 </style>

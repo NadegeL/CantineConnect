@@ -16,23 +16,23 @@ const routes = [
     children: [
       { path: '', name: 'Home', component: Home },
       { path: 'parent-login', name: 'ParentsLogin', component: ParentsLogin },
-      { 
-        path: 'parent-dashboard', 
+      {
+        path: 'parent-dashboard',
         name: 'ParentsDashboard',
-        component: ParentsDashboard, 
+        component: ParentsDashboard,
         meta: { requiresAuth: true, userType: 'parent' }
       },
       { path: 'admin/login', name: 'AdminLogin', component: AdminLogin },
-      { 
-        path: 'create-admin', 
-        name: 'CreateAdmin', 
+      {
+        path: 'create-admin',
+        name: 'CreateAdmin',
         component: CreateAdmin,
         meta: { requiresAuth: false, onlyIfNoAdminExists: true }
       },
-      { 
-        path: 'admin', 
+      {
+        path: 'admin',
         name: 'AdminDashboard',
-        component: AdminDashboard, 
+        component: AdminDashboard,
         meta: { requiresAuth: true, userType: 'admin' }
       },
     ],
@@ -50,9 +50,6 @@ let adminExistsCache = null;
 
 // Vérifie si un administrateur existe dans la base de données
 async function checkAdminExists() {
-  if (adminExistsCache !== null) {
-    return adminExistsCache;
-  }
   try {
     const response = await fetch('http://localhost:8000/api/administrations/');
     const admins = await response.json();
@@ -71,7 +68,7 @@ function isAuthenticated(requiredType) {
   return token && (!requiredType || userType === requiredType);
 }
 
-// Guard de navigation
+// Garde de navigation
 router.beforeEach(async (to, from, next) => {
   const adminExists = await checkAdminExists();
 
@@ -100,4 +97,5 @@ router.beforeEach(async (to, from, next) => {
   next();
 });
 
+export { checkAdminExists };
 export default router;

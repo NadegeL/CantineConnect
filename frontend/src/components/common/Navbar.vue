@@ -16,12 +16,12 @@ export default {
   name: 'Navbar',
   methods: {
     goToAdminLogin() {
-      this.$router.push('/admin/login'); // Redirige vers la page de connexion administrateur
+      this.$router.push('/admin/login'); // Redirects to administrator login page
     },
   },
 };
 </script>
 
 <style scoped>
-/* Ajoutez des styles spécifiques si nécessaire */
+/* Add specific styles if necessary */
 </style>
