@@ -9,10 +9,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'changecetsecret')
 
 # Enable debug mode depending on environment
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = True
 
 # Définition des hôtes autorisés
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.0.242').split(',')
+ALLOWED_HOSTS = ['*']#pour localhost uniquement
 
 # Installed applications
 INSTALLED_APPS = [
