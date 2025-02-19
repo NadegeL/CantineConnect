@@ -1,19 +1,5 @@
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework import serializers
-from django.db import IntegrityError
-from .models import (User, Parent, Student, Administration, Address, SchoolClass,
-                     Allergy, SchoolZone, Holidays)
-from .serializers import (UserSerializer, ParentSerializer, StudentSerializer, AdministrationSerializer,
-                          AddressSerializer, SchoolClassSerializer, AllergySerializer,
-                          SchoolZoneSerializer, HolidaysSerializer)
-from drf_yasg.utils import swagger_auto_schema
-import datetime
-from django.http import HttpResponse
-from django.shortcuts import redirect
-from django.core.exceptions import ValidationError
-from .services.holidays_service import HolidaysService
+from .imports import *
+from .app_imports import *
 
 
 def home(request):
@@ -25,13 +11,136 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
     @swagger_auto_schema(
-        request_body=UserSerializer,
-        operation_description="Create a new user",
-        operation_summary="Create a user",
-        responses={201: UserSerializer()},
+        method='post',
+        operation_description="Envoi d'un mot de passe temporaire à un parent",
+        operation_summary="Envoi mot de passe temporaire",
+        request_body=serializers.Serializer({
+            'email': serializers.EmailField(help_text="Email du parent")
+        }),
+        responses={
+            200: serializers.Serializer({'message': serializers.CharField()}),
+            403: serializers.Serializer({'error': serializers.CharField()}),
+            400: serializers.Serializer({'error': serializers.CharField()})
+        }
     )
-    def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+    @action(detail=False, methods=['post'])
+    def send_temporary_password(self, request):
+        """envoi du mot de passe temporaire à un parent"""
+        if not request.user.is_staff:
+            return Response(
+                {"error": "accès refusé"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        email = request.data.get('email')
+        if not email:
+            return Response(
+                {"error": "email requis"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # générer password provisoire
+        temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+
+        try:
+            # créer ou mettre à jour l'utilisateur
+            user, created = User.object.get_or_create(
+                email=email,
+                defaults={
+                    'username': email,
+                    'is_active': True,
+                    'first_time_login': True
+                }
+            )
+            user.set_password(temp_password)
+            user.save()
+
+            send_mail(
+                'Voici vos identifiants pour CantineConnect',
+                f'''Bonjour,
+                Veuillez trouver vos identifiants pour vous connecter à CantineConnect:
+                Email: {email}
+                Mot de passe: {temp_password}
+                
+                À votre première connexion, vous serez invité à changer votre mot de passe.
+                
+                Cordialement,
+                L'équipe CantineConnect''',
+                'noreply@cantineconnect.fr',
+                [email],
+                fail_silently=False
+            )
+
+            return Response({
+                "message": f"Mot de passe provisoire envoyé à {email}"
+            })
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @swagger_auto_schema(
+        method='post',
+        operation_description="Changer le mot de passe d'un utilisateur",
+        operation_summary="Changer mot de passe",
+        request_body=serializers.Serializer({
+            'new_password': serializers.CharField(help_text="Nouveau mot de passe"),
+            'confirm_password': serializers.CharField(help_text="Confirmation du mot de passe")
+        }),
+        responses={
+            200: serializers.Serializer({'message': serializers.CharField()}),
+            403: serializers.Serializer({'error': serializers.CharField()}),
+            400: serializers.Serializer({'error': serializers.CharField()})
+        }
+    )
+    @action(detail=False, methods=['post'])
+    def change_password_first_login(self, request):
+        """Création du mot de passe pour la première connexion"""
+        user = request.user
+        if not user.first_time_login:
+            return Response(
+                {"error": "Ce n'est pas votre première connexion"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+
+        if not new_password or not confirm_password:
+            return Response(
+                {"error": "Les deux champs de mot de passe sont requis"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if new_password != confirm_password:
+            return Response(
+                {"error": "Les mots de passe ne correspondent pas"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # valider password
+            validate_password(new_password, user)
+
+            # changer le mot de passe
+            user.set_password(new_password)
+            user.first_time_login = False
+            user.save()
+
+            return Response({
+                "message": "Mot de passe changé avec succès"
+            })
+        except ValidationError as e:
+            return Response(
+                {"error": list(e.messages)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class ParentViewSet(viewsets.ModelViewSet):

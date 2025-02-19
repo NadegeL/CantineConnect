@@ -1,11 +1,4 @@
-from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.contrib.auth.hashers import make_password
-import uuid
-from phonenumber_field.modelfields import PhoneNumberField
-from django.utils.crypto import get_random_string
-from django.core.validators import MinLengthValidator
-from django.core.exceptions import ValidationError
+from .imports import *
 
 
 class CustomUserManager(BaseUserManager):
@@ -35,6 +28,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
+    first_time_login = models.BooleanField(default=True)
 
     objects = CustomUserManager()
 
