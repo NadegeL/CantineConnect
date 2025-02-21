@@ -5,14 +5,15 @@ from .models import User, Address, Parent, SchoolClass, Student, SchoolZone, Adm
 # Définition de la classe CustomUserAdmin
 class CustomUserAdmin(UserAdmin):
     list_display = ('email', 'first_name', 'last_name',
-                    'is_staff', 'is_active')
+                    'user_type', 'is_staff', 'is_active')
     search_fields = ('email', 'first_name', 'last_name')
     ordering = ('email',)
     readonly_fields = ('date_joined', 'last_login')
 
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Informations personnelles', {'fields': ('first_name', 'last_name')}),
+        ('Informations personnelles', {
+         'fields': ('first_name', 'last_name', 'user_type')}),
         ('Permissions', {'fields': ('is_active', 'is_staff',
          'is_superuser', 'groups', 'user_permissions')}),
         ('Dates importantes', {'fields': ('last_login', 'date_joined')}),

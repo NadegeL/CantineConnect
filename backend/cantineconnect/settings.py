@@ -3,6 +3,9 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Specifies the custom User model for authentication.
+AUTH_USER_MODEL = 'api.User'
+
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,12 +30,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework_simplejwt',
-    'rest_framework',  # If you use Django Rest Framework
-    'drf_yasg', # For Swagger
-    'api',  # Add this line to include your application
+    'rest_framework',
+    'drf_yasg',
     'phonenumber_field',
     'corsheaders',
+    'api.apps.ApiConfig',
 ]
+
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',

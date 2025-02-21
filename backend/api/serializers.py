@@ -1,6 +1,25 @@
 from rest_framework import serializers
-from .models import (User, Parent, Student, Administration, Address,
-                     SchoolClass, Allergy, SchoolZone, Holidays)
+from django.contrib.auth import get_user_model
+from .models import (SchoolZone, Parent, Student, Administration, Address,
+                     SchoolClass, Allergy, Holidays)
+
+User = get_user_model()
+
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['email', 'password', 'first_name', 'last_name', 'user_type']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+    def create(self, validated_data):
+        # Set is_staff based on user_type
+        if validated_data.get('user_type') == 'school_admin':
+            validated_data['is_staff'] = True
+        user = User.objects.create_user(**validated_data)
+        return user
 
 
 class SchoolZoneSerializer(serializers.ModelSerializer):
@@ -12,14 +31,14 @@ class SchoolZoneSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name',
-                  'password', 'is_active', 'is_staff', 'date_joined']
+        fields = ['email', 'password', 'first_name', 'last_name', 'user_type']
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        # Extrait is_staff des données validées
-        is_staff = validated_data.pop('is_staff', False)
-        user = User.objects.create_user(**validated_data, is_staff=is_staff)
+        # Set is_staff based on user_type
+        if validated_data.get('user_type') == 'school_admin':
+            validated_data['is_staff'] = True
+        user = User.objects.create_user(**validated_data)
         return user
 
     def validate_email(self, value):
@@ -31,7 +50,7 @@ class UserSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("This field is mandatory.")
         return value
-    
+
 
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:

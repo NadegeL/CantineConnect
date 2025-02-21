@@ -1,5 +1,20 @@
 from .imports import *
 from .app_imports import *
+from django.contrib.auth import get_user_model
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from drf_yasg.utils import swagger_auto_schema
+from .models import (Parent, Student, Administration, Address,
+                     SchoolClass, Allergy, SchoolZone, Holidays)
+from .serializers import (UserSerializer, ParentSerializer, StudentSerializer,
+                          AdministrationSerializer, AddressSerializer,
+                          SchoolClassSerializer, AllergySerializer,
+                          SchoolZoneSerializer, HolidaysSerializer)
+
+User = get_user_model()
+
 
 
 def home(request):
@@ -143,6 +158,18 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
 
+class RegisterView(APIView):
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            if user.user_type == 'administration':
+                Administration.objects.create(user=user)
+            elif user.user_type == 'parent':
+                Parent.objects.create(user=user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 class ParentViewSet(viewsets.ModelViewSet):
     queryset = Parent.objects.all()
     serializer_class = ParentSerializer

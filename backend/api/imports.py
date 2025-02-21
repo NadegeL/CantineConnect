@@ -12,8 +12,9 @@ from django.contrib.auth.models import (
     PermissionsMixin
 )
 from django.contrib.auth.password_validation import validate_password
-from django.core.validators import MinLengthValidator
+from django.core.validators import MinLengthValidator, RegexValidator
 from django.utils.crypto import get_random_string
+from rest_framework.views import APIView
 
 # Third-party imports
 from phonenumber_field.modelfields import PhoneNumberField

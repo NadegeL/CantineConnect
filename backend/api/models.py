@@ -4,10 +4,9 @@ from .imports import *
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
-            raise ValueError('E-mail address is mandatory')
+            raise ValueError('The e-mail address is mandatory')
         email = self.normalize_email(email)
-        extra_fields.setdefault('username', email)  # Set username to email
-        user = self.model(email=email, username=email, **extra_fields)
+        user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -15,42 +14,46 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('The superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError(
+                'The superuser must have is_superuser=True.')
 
         return self.create_user(email, password, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    email = models.EmailField(unique=True, max_length=254)
-    username = models.CharField(
-        unique=True, max_length=254)  # Add username field
+    email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30, blank=True)
     last_name = models.CharField(max_length=30, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    modified_at = models.DateTimeField(auto_now=True)
-    first_time_login = models.BooleanField(default=True)
+    user_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('parent', 'Parent'),
+            ('school_admin', 'Administration du Site'),
+            ('django_admin', 'Administrateur du TDB de Django'),
+        ]
+    )
 
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ['user_type']
 
     def __str__(self):
         return self.email
 
-    groups = models.ManyToManyField(
-        'auth.Group',
-        related_name='custom_user_set',
-        blank=True
-    )
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        related_name='custom_user_permissions_set',
-        blank=True
-    )
+    class Meta:
+        verbose_name = 'Utilisateur'
+        verbose_name_plural = 'Utilisateurs'
+
 
 # Address template
 class Address(models.Model):
@@ -63,7 +66,7 @@ class Address(models.Model):
             RegexValidator(
                 # Valide un code postal entre 4 et 10 chiffres
                 regex=r'^\d{4,10}$',
-                message="Le code postal doit contenir entre 4 et 10 chiffres."
+                message="The postal code must contain between 4 and 10 digits."
             )
         ]
     )
@@ -74,48 +77,38 @@ class Address(models.Model):
 
     def clean(self):
         """
-        Validation personnalisée pour vérifier la cohérence des champs.
+        Custom validation to check field consistency.
         """
         if not self.postal_code.isdigit():
             raise ValidationError(
-                {'postal_code': "Le code postal doit être uniquement numérique."})
+                {'postal_code': "The zip code must be numeric only."})
 
         if len(self.country) < 3:
             raise ValidationError(
-                {'country': "Le nom du pays doit comporter au moins 3 caractères."})
+                {'country': "The country name must be at least 3 characters long."})
 
     def save(self, *args, **kwargs):
         """
-        Appelle `clean()` avant de sauvegarder les données.
+        Call `clean()` before saving data.
         """
         self.full_clean()  # Appelle clean() et d'autres validations
         super().save(*args, **kwargs)
 
 # Parent model
 class Parent(models.Model):
-    COUNTRY_CHOICES = [
-        ('FR', 'France'),
-        ('CH', 'Suisse'),
-    ]
-
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='parent_profile')
     phone_number = PhoneNumberField()
-    country_code = models.CharField(max_length=2, choices=COUNTRY_CHOICES)
-    is_admin = models.BooleanField(default=False)
+    country_code = models.CharField(
+        max_length=2, choices=[('FR', 'France'), ('CH', 'Suisse')])
     invoice_available = models.BooleanField(default=False)
-    address = models.ForeignKey(Address, on_delete=models.CASCADE)
+    address = models.ForeignKey('Address', on_delete=models.CASCADE)
     is_activated = models.BooleanField(default=False)
     activation_token = models.CharField(
         max_length=50, unique=True, blank=True, null=True)
-    relation = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
-
-    def save(self, *args, **kwargs):
-        if not self.activation_token:
-            self.activation_token = get_random_string(length=40)
-        super().save(*args, **kwargs)
 
 # SchoolClass model
 class SchoolClass(models.Model):
@@ -168,38 +161,21 @@ class SchoolZone(models.Model):
 
 # Administration model
 class Administration(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    is_admin = models.BooleanField(default=True)
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='admin_profile')
     invoice_edited = models.BooleanField(default=False)
     address = models.ForeignKey('Address', on_delete=models.CASCADE)
     zone = models.ForeignKey(
-        SchoolZone,
-        on_delete=models.CASCADE,
-        related_name="administrations",
-        verbose_name="Nom de la zone"
-    )
+        'SchoolZone', on_delete=models.CASCADE, related_name="administrations")
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
 
-    def clean(self):
-        super().clean()
-        if self.zone:
-            self.zone.full_clean()
-        # Checks that the associated user is a staff member
-        if not self.user.is_staff:
-            raise ValidationError(
-                "The user must be a staff member (is_staff=True) to be associated with an administrator.")
-
     def save(self, *args, **kwargs):
-        self.clean()  # Calls up the clean method to validate data
         if self.user:
-            self.user.is_staff = self.is_admin
-            if self.user.password:
-                self.user.password = make_password(self.user.password)
+            self.user.is_staff = True
             self.user.save()
         super().save(*args, **kwargs)
-
 
 class Holidays(models.Model):
     """Vacances scolaires"""
