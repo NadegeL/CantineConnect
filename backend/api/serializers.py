@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 from .models import (SchoolZone, Parent, Student, Administration, Address,
                      SchoolClass, Allergy, Holidays)
@@ -6,20 +7,83 @@ from .models import (SchoolZone, Parent, Student, Administration, Address,
 User = get_user_model()
 
 
-class UserRegistrationSerializer(serializers.ModelSerializer):
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['user_type'] = user.user_type
+        print(f"User type in token: {user.user_type}")  # Ajoutez ce log
+        return token
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['user_type'] = self.user.user_type
+        # Ajoutez ce log
+        print(f"User type in validate: {self.user.user_type}")
+        return data
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['address_line_1', 'address_line_2',
+                  'city', 'postal_code', 'country']
+
+class AdministrationSerializer(serializers.ModelSerializer):
+    zone = serializers.CharField()
+
+    class Meta:
+        model = Administration
+        fields = ['invoice_edited', 'zone']
+
+
+class ParentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Parent
+        fields = ['phone_number', 'country_code', 'invoice_available']
+
+class RegisterSerializer(serializers.ModelSerializer):
+    address = AddressSerializer(required=False)
+    administration = AdministrationSerializer(required=False)
+
     class Meta:
         model = User
-        fields = ['email', 'password', 'first_name', 'last_name', 'user_type']
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+        fields = ['email', 'password', 'first_name', 'last_name',
+                  'user_type', 'address', 'administration']
+        extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        # Set is_staff based on user_type
-        if validated_data.get('user_type') == 'school_admin':
-            validated_data['is_staff'] = True
+        address_data = validated_data.pop('address', None)
+        administration_data = validated_data.pop('administration', None)
+
         user = User.objects.create_user(**validated_data)
+
+        if address_data:
+            address = Address.objects.create(**address_data)
+            user.address = address
+
+        if administration_data:
+            zone_name = administration_data.pop('zone')
+            zone, _ = SchoolZone.objects.get_or_create(name=zone_name)
+            Administration.objects.create(
+                user=user, address=address, zone=zone, **administration_data)
+
         return user
+
+class ParentProfileUpdateSerializer(serializers.ModelSerializer):
+    address = AddressSerializer()
+
+    class Meta:
+        model = Parent
+        fields = ['phone_number', 'country_code',
+                  'invoice_available', 'address']
+
+    def update(self, instance, validated_data):
+        address_data = validated_data.pop('address', None)
+        if address_data:
+            Address.objects.filter(
+                id=instance.address.id).update(**address_data)
+        return super().update(instance, validated_data)
 
 
 class SchoolZoneSerializer(serializers.ModelSerializer):
@@ -31,11 +95,10 @@ class SchoolZoneSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['email', 'password', 'first_name', 'last_name', 'user_type']
+        fields = ['id', 'email', 'first_name', 'last_name', 'user_type']
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        # Set is_staff based on user_type
         if validated_data.get('user_type') == 'school_admin':
             validated_data['is_staff'] = True
         user = User.objects.create_user(**validated_data)
@@ -52,21 +115,6 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
 
-class AddressSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Address
-        fields = '__all__'
-
-
-class ParentSerializer(serializers.ModelSerializer):
-    relation = serializers.CharField(
-        max_length=50, required=False, allow_blank=True)
-
-    class Meta:
-        model = Parent
-        fields = '__all__'
-
-
 class StudentSerializer(serializers.ModelSerializer):
     parents = serializers.PrimaryKeyRelatedField(
         queryset=Parent.objects.all(), many=True)
@@ -80,35 +128,10 @@ class StudentSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         parents_data = validated_data.pop('parents', [])
         allergies_data = validated_data.pop('allergies', [])
-
         student = Student.objects.create(**validated_data)
         student.parents.set(parents_data)
         student.allergies.set(allergies_data)
         return student
-
-
-class AdministrationSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    address = serializers.PrimaryKeyRelatedField(
-        queryset=Address.objects.all())
-    zone = serializers.PrimaryKeyRelatedField(
-        queryset=SchoolZone.objects.all())  # Uses zone ID
-
-    class Meta:
-        model = Administration
-        fields = '__all__'
-
-    def validate_user(self, value):
-        if not value.is_staff:
-            raise serializers.ValidationError(
-                "The user must have staff status to be an administrator."
-            )
-        return value
-
-    def create(self, validated_data):
-        # Create an administration with validated data
-        administration = Administration.objects.create(**validated_data)
-        return administration
 
 
 class SchoolClassSerializer(serializers.ModelSerializer):

@@ -1,5 +1,6 @@
 from django.dispatch import receiver
-from django.db.models.signals import post_save, post_migrate
+from django.db.models.signals import post_save, post_migrate, post_delete
+from django.apps import apps
 
 
 @receiver(post_migrate)
@@ -31,3 +32,15 @@ def add_user_to_group(sender, instance, created, **kwargs):
             instance.save()
         except Group.DoesNotExist:
             pass
+
+
+def clean_orphan_addresses():
+    Address = apps.get_model('api', 'Address')
+    Address.clean_orphans()
+
+
+@receiver(post_delete)
+@receiver(post_save)
+def handle_parent_admin_changes(sender, instance, **kwargs):
+    if sender.__name__ in ['Parent', 'Administration']:
+        clean_orphan_addresses()

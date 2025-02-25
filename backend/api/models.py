@@ -1,4 +1,15 @@
 from .imports import *
+from django.db import models
+from django.apps import apps
+from django.contrib.auth.models import AbstractUser
+
+
+class BaseModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
 
 
 class CustomUserManager(BaseUserManager):
@@ -19,13 +30,15 @@ class CustomUserManager(BaseUserManager):
         if extra_fields.get('is_staff') is not True:
             raise ValueError('The superuser must have is_staff=True.')
         if extra_fields.get('is_superuser') is not True:
-            raise ValueError(
-                'The superuser must have is_superuser=True.')
+            raise ValueError('The superuser must have is_superuser=True.')
 
         return self.create_user(email, password, **extra_fields)
 
+    def get_by_natural_key(self, email):
+        return self.get(email=email)
 
-class User(AbstractBaseUser, PermissionsMixin):
+
+class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30, blank=True)
@@ -53,8 +66,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         verbose_name = 'Utilisateur'
         verbose_name_plural = 'Utilisateurs'
-
-
+        
 # Address template
 class Address(models.Model):
     address_line_1 = models.CharField(max_length=255)
@@ -82,27 +94,29 @@ class Address(models.Model):
         if not self.postal_code.isdigit():
             raise ValidationError(
                 {'postal_code': "The zip code must be numeric only."})
-
         if len(self.country) < 3:
             raise ValidationError(
                 {'country': "The country name must be at least 3 characters long."})
 
     def save(self, *args, **kwargs):
-        """
-        Call `clean()` before saving data.
-        """
-        self.full_clean()  # Appelle clean() et d'autres validations
+        self.full_clean()
         super().save(*args, **kwargs)
 
+    @classmethod
+    def clean_orphans(cls):
+        cls.objects.filter(parent__isnull=True,
+                           administration__isnull=True).delete()
+
 # Parent model
-class Parent(models.Model):
+class Parent(BaseModel):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='parent_profile')
     phone_number = PhoneNumberField()
     country_code = models.CharField(
         max_length=2, choices=[('FR', 'France'), ('CH', 'Suisse')])
     invoice_available = models.BooleanField(default=False)
-    address = models.ForeignKey('Address', on_delete=models.CASCADE)
+    address = models.ForeignKey(
+        'Address', on_delete=models.SET_NULL, null=True)
     is_activated = models.BooleanField(default=False)
     activation_token = models.CharField(
         max_length=50, unique=True, blank=True, null=True)
@@ -110,8 +124,12 @@ class Parent(models.Model):
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        Address.clean_orphans()
+
 # SchoolClass model
-class SchoolClass(models.Model):
+class SchoolClass(BaseModel):
     name = models.CharField(max_length=50, unique=True)
     is_active = models.BooleanField(default=True)
 
@@ -119,7 +137,7 @@ class SchoolClass(models.Model):
         return self.name
 
 # Student model
-class Student(models.Model):
+class Student(BaseModel):
     first_name = models.CharField(max_length=30, blank=False)
     last_name = models.CharField(max_length=30, blank=False)
     parents = models.ManyToManyField(
@@ -143,13 +161,12 @@ class SchoolZone(models.Model):
         ('B', 'Zone B'),
         ('C', 'Zone C'),
     ]
-
     name = models.CharField(
         max_length=1,
         choices=ZONE_CHOICES,
         unique=True,
         verbose_name="Nom de la zone"
-    )
+        )
 
     def __str__(self):
         return self.get_name_display()
@@ -164,7 +181,8 @@ class Administration(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='admin_profile')
     invoice_edited = models.BooleanField(default=False)
-    address = models.ForeignKey('Address', on_delete=models.CASCADE)
+    address = models.ForeignKey(
+        'Address', on_delete=models.SET_NULL, null=True)
     zone = models.ForeignKey(
         'SchoolZone', on_delete=models.CASCADE, related_name="administrations")
 
@@ -176,15 +194,16 @@ class Administration(models.Model):
             self.user.is_staff = True
             self.user.save()
         super().save(*args, **kwargs)
+        Address.clean_orphans()
 
-class Holidays(models.Model):
+
+class Holidays(BaseModel):
     """Vacances scolaires"""
-    zone = models.ForeignKey(
-        SchoolZone,
-        on_delete=models.CASCADE,
-        related_name="holidays",
-        verbose_name="Zone académique"
-    )
+    zone = models.ForeignKey(SchoolZone,
+                             on_delete=models.CASCADE,
+                             related_name="holidays",
+                             verbose_name="Zone académique"
+                             )
     start_date = models.DateField(verbose_name="Date de début des vacances")
     end_date = models.DateField(verbose_name="Date de fin des vacances")
     description = models.CharField(
@@ -192,29 +211,28 @@ class Holidays(models.Model):
         blank=True,
         null=True,
         verbose_name="Description des vacances"
-    )
-    school_year = models.CharField(
-        max_length=9,
-        validators=[MinLengthValidator(9)],
-        verbose_name="Année scolaire"
-    )
+        )
+    school_year = models.CharField(max_length=9,
+                                   validators=[
+                                   MinLengthValidator(9)],
+                                   verbose_name="Année scolaire"
+                                   )
 
     def __str__(self):
         return f"{self.description} ({self.start_date} - {self.end_date})"
 
 
-class Allergy(models.Model):
+class Allergy(BaseModel):
     """Gérer les allergies et restrictions alimentaires"""
-    name = models.CharField(
-        max_length=100,
-        unique=True,
-        verbose_name="Type d'allergies ou restrictions alimentaires"
-    )
+    name = models.CharField(max_length=100,
+                            unique=True,
+                            verbose_name="Type d'allergies ou restrictions alimentaires"
+                            )
     description = models.TextField(
         blank=True,
         null=True,
         verbose_name="Description détaillée"
-    )
+        )
     severity = models.CharField(
         max_length=20,
         choices=[

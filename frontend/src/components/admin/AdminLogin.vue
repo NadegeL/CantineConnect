@@ -25,7 +25,7 @@
         </div>
       </div>
       <button type="submit" class="submit-btn" :disabled="isLoading">
-        {{ isLoading ? 'Connexion...' : 'Se connecter' }}
+        {{ isLoading ? 'Connexion en cours...' : 'Se connecter' }}
       </button>
     </form>
     <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
@@ -33,10 +33,13 @@
 </template>
 
 <script>
-import api from '@/http-common';
+import { useAuthStore } from '@/stores/auth';
 
 export default {
-  name: 'AdminLogin',
+  setup() {
+    const authStore = useAuthStore();
+    return { authStore };
+  },
   data() {
     return {
       username: '',
@@ -47,35 +50,31 @@ export default {
     };
   },
   methods: {
-    togglePasswordVisibility() {
-      this.showPassword = !this.showPassword;
-    },
     async login() {
       this.isLoading = true;
       this.errorMessage = '';
       try {
-        const response = await api.post('token/', {
-          json: {
-            email: this.username,
-            password: this.password,
-          }
-        }).json();
+        console.log('Starting login process...');
+        await this.authStore.login(this.username, this.password);
+        console.log('Login successful, user type:', this.authStore.userType);
 
-        if (response.access) {
-          localStorage.setItem('token', response.access);
-          localStorage.setItem('userType', 'admin');
-          this.$router.push('/admin');
+        if (this.authStore.userType === 'school_admin') {
+          console.log('Redirecting to admin dashboard...');
+          this.$router.push({ name: 'AdminDashboard' });
         } else {
-          throw new Error('Token non reçu');
+          throw new Error('Unauthorized user type');
         }
       } catch (error) {
-        console.error('Erreur lors de la connexion:', error);
-        this.errorMessage = "Nom d'utilisateur ou mot de passe incorrect.";
+        console.error('Login failed:', error);
+        this.errorMessage = "Erreur de connexion. Veuillez vérifier vos identifiants et réessayer.";
       } finally {
         this.isLoading = false;
       }
     },
-  },
+    togglePasswordVisibility() {
+      this.showPassword = !this.showPassword;
+    }
+  }
 };
 </script>
 

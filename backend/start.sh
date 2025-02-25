@@ -21,14 +21,6 @@ fi
 # Appliquer les migrations
 python manage.py migrate
 
-# Vérifier si un superutilisateur existe déjà
-if ! python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(is_superuser=True).exists()"; then
-    echo "Creating superuser with email: $DJANGO_SUPERUSER_EMAIL, username: $DJANGO_SUPERUSER_USERNAME, and password: $DJANGO_SUPERUSER_PASSWORD"
-    python manage.py createsuperuser --noinput --email $DJANGO_SUPERUSER_EMAIL --username $DJANGO_SUPERUSER_USERNAME --password $DJANGO_SUPERUSER_PASSWORD --user_type django_admin
-else
-    echo "Superuser already exists"
-fi
-
 # Exécuter le script de configuration des classes par défaut
 python manage.py setup_default_classes
 

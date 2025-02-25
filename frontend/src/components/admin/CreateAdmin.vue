@@ -1,6 +1,6 @@
 <template>
   <div class="create-admin">
-    <h1>Créer un administrateur</h1>
+    <h1>{{ isInitialCreation ? 'Créer un Administrateur' : 'Ajouter un Administrateur' }}</h1>
     <form @submit.prevent="createAdmin">
       <h2>Informations utilisateur</h2>
       <input v-model="userData.email" type="email" placeholder="Email" required />
@@ -19,12 +19,12 @@
       <h2>Zone académique</h2>
       <label for="zone-select">Zone académique</label>
       <select v-model="adminData.zone" id="zone-select" required>
-        <option v-for="zone in schoolZones" :key="zone.id" :value="zone.id">
+        <option v-for="zone in schoolZones" :key="zone.id" :value="zone.name">
           {{ zone.name }}
         </option>
       </select>
 
-      <button type="submit" class="submit-btn">Créer l'administrateur</button>
+      <button type="submit" class="submit-btn">{{ isInitialCreation ? 'Créer l\'administrateur' : 'Ajouter l\'administrateur' }}</button>
     </form>
     <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
     <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
@@ -33,7 +33,7 @@
 
 <script>
 import api from '@/http-common';
-import { checkAdminExists } from '@/router'; // Import verification function
+import { checkAdminExists } from '@/router';
 
 export default {
   name: 'CreateAdmin',
@@ -44,8 +44,7 @@ export default {
         password: '',
         first_name: '',
         last_name: '',
-        is_active: true,
-        is_staff: true,
+        user_type: 'school_admin',
       },
       passwordConfirmation: '',
       addressData: {
@@ -57,14 +56,17 @@ export default {
       },
       adminData: {
         zone: '',
+        invoice_edited: false,
       },
       schoolZones: [],
       errorMessage: '',
       successMessage: '',
+      isInitialCreation: false,
     };
   },
   async created() {
     await this.fetchSchoolZones();
+    this.isInitialCreation = this.$route.name === 'CreateAdmin';
   },
   methods: {
     async fetchSchoolZones() {
@@ -73,7 +75,6 @@ export default {
         this.schoolZones = response;
       } catch (error) {
         this.errorMessage = 'Erreur lors de la récupération des zones scolaires.';
-        console.error('Erreur lors de la récupération des zones scolaires:', error);
       }
     },
     async createAdmin() {
@@ -86,61 +87,36 @@ export default {
         this.errorMessage = '';
         this.successMessage = '';
 
-        const userResponse = await api.post('users/', {
-          json: {
-            username: this.userData.email.split('@')[0],
-            email: this.userData.email,
-            password: this.userData.password,
-            first_name: this.userData.first_name,
-            last_name: this.userData.last_name,
-            is_active: true,
-            is_staff: true,
-          }
-        }).json();
-
-        const userId = userResponse.id;
-
-        const addressResponse = await api.post('addresses/', { json: this.addressData }).json();
-        const addressId = addressResponse.id;
-
-        const adminData = {
-          user: userId,
-          is_admin: true,
-          invoice_edited: false,
-          address: addressId,
-          zone: this.adminData.zone,
+        const requestData = {
+          email: this.userData.email,
+          password: this.userData.password,
+          first_name: this.userData.first_name,
+          last_name: this.userData.last_name,
+          user_type: this.userData.user_type,
+          address: this.addressData,
+          administration: {
+            zone: this.adminData.zone,
+            invoice_edited: this.adminData.invoice_edited,
+          },
         };
 
-        console.log('Données envoyées pour créer l\'administrateur:', adminData);
+        await api.post('register/', { json: requestData }).json();
 
-        await api.post('administrations/', { json: adminData });
-        console.log('Administrateur créé avec succès');
+        this.successMessage = this.isInitialCreation
+          ? "L'administrateur a été créé avec succès. Redirection vers la page de connexion..."
+          : "L'administrateur a été ajouté avec succès.";
 
-        this.successMessage = "L'administrateur a été créé avec succès. Redirection vers la page de connexion...";
-
-        // Rerun administrator existence check
-        await checkAdminExists();
+        // Invalider le cache
+        checkAdminExists.invalidateCache();
 
         setTimeout(() => {
-          this.$router.push('/admin/login').catch(err => {
-            console.error('Erreur de redirection:', err);
+          this.$router.push(this.isInitialCreation ? '/admin/login' : '/admin').catch(() => {
             this.errorMessage = "Erreur lors de la redirection. Veuillez vous connecter manuellement.";
           });
         }, 3000);
       } catch (error) {
-        if (error.response) {
-          const errorData = await error.response.json();
-          if (errorData.email && errorData.email.includes("already exists")) {
-            this.errorMessage = "Cette adresse email est déjà utilisée.";
-          } else if (errorData.username && errorData.username.includes("already exists")) {
-            this.errorMessage = "Ce nom d'utilisateur existe déjà.";
-          } else {
-            this.errorMessage = "Données invalides. Vérifiez les informations saisies.";
-          }
-        } else {
-          this.errorMessage = "Erreur inattendue. Veuillez réessayer plus tard.";
-        }
-        console.error("Erreur lors de la création de l'administrateur :", error);
+        console.error('Error creating admin:', error);
+        this.errorMessage = "Erreur lors de la création de l'administrateur. Veuillez réessayer.";
       }
     },
   },
