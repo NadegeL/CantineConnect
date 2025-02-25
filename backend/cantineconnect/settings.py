@@ -1,19 +1,20 @@
+from datetime import timedelta
 import os
 from pathlib import Path
 
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Sécurisation des clés sensibles via les variables d'environnement
+# Securing sensitive keys via environment variables
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'changecetsecret')
 
-# Activation du mode debug en fonction de l'environnement
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+# Enable debug mode depending on environment
+DEBUG = True
 
 # Définition des hôtes autorisés
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = ['*']#pour localhost uniquement
 
-# Applications installées
+# Installed applications
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -21,12 +22,24 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api',
+    'rest_framework',  # If you use Django Rest Framework
+    'drf_yasg', # For Swagger
+    'api',  # Add this line to include your application
     'phonenumber_field',
+    'corsheaders',
 ]
-
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
 # Middleware
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -36,10 +49,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# URL principale du projet
+# Main project URL
 ROOT_URLCONF = 'cantineconnect.urls'
 
-# Configuration des templates
+# Template configuration
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -59,7 +72,7 @@ TEMPLATES = [
 # WSGI Application
 WSGI_APPLICATION = 'cantineconnect.wsgi.application'
 
-# Configuration de la base de données (PostgreSQL via Docker)
+# Database configuration (PostgreSQL via Docker)
 import os
 
 DATABASES = {
@@ -73,7 +86,7 @@ DATABASES = {
     }
 }
 
-# Validation des mots de passe
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -81,15 +94,44 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Localisation
+# Location
 LANGUAGE_CODE = 'fr-fr'
 TIME_ZONE = 'Europe/Paris'
 USE_I18N = True
 USE_TZ = True
 
-# Fichiers statiques
+# Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-# Clé primaire par défaut
+# Default primary key
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# CSRF settings
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False
+CSRF_TRUSTED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173']
+
+# CORS settings
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+]
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+}
+
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,
+}

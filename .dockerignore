@@ -1,0 +1,31 @@
+# Ignore node_modules, as they are installed within the Docker container during the build process
+node_modules
+
+# Ignore .yarn directory if using Yarn, to avoid copying Yarn-specific files
+.yarn
+
+# Ignore Git directory (this prevents any Git-related files from being copied into Docker image)
+.git
+
+# Ignore log files to avoid adding unnecessary logs to the Docker image
+*.log
+
+# Ignore environment files, they should not be copied to the image for security reasons
+*.env
+
+# Ignore any temporary or hidden files
+*.bak
+*.swp
+.DS_Store
+
+# Ignore Vite and other build-specific cache files (they will be recreated during build)
+.vite
+
+# Ignore any compiled files from your backend if you're working with a full-stack app
+/back/dist
+
+# Ignore Dockerfile-related build artifacts or temporary files
+Dockerfile.*
+
+# Ignore build directories or any other generated files not needed in the Docker image
+/build
