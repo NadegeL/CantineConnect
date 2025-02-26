@@ -9,3 +9,4 @@ django-phonenumber-field[phonenumbers]==8.0.0
 django-countries>=7.6.1,<8
 requests==2.31.0
 djangorestframework-simplejwt==5.3.1
+python-dotenv==1.0.1

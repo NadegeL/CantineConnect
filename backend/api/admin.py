@@ -1,48 +1,36 @@
 from django.contrib import admin
-from .models import Student, Allergy, Parent
+from django.contrib.auth.admin import UserAdmin
+from .models import User, Address, Parent, SchoolClass, Student, SchoolZone, Administration, Holidays, Allergy
+
+# Définition de la classe CustomUserAdmin
+class CustomUserAdmin(UserAdmin):
+    list_display = ('email', 'first_name', 'last_name',
+                    'user_type', 'is_staff', 'is_active')
+    search_fields = ('email', 'first_name', 'last_name')
+    ordering = ('email',)
+    readonly_fields = ('date_joined', 'last_login')
+
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Informations personnelles', {
+         'fields': ('first_name', 'last_name', 'user_type')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff',
+         'is_superuser', 'groups', 'user_permissions')}),
+        ('Dates importantes', {'fields': ('last_login', 'date_joined')}),
+    )
+
+    filter_horizontal = ('groups', 'user_permissions')
 
 
-@admin.register(Student)
-class StudentAdmin(admin.ModelAdmin):
-    list_display = ('get_full_name', 'grade', 'get_allergies', 'get_parent')
-    list_filter = ('grade', 'allergies', 'parent')
-    search_fields = ['parent__user__first_name',
-                     'parent__user__last_name', 'grade']
+# Enregistrement du modèle User avec CustomUserAdmin
+admin.site.register(User, CustomUserAdmin)
 
-    def get_full_name(self, obj):
-        return f"{obj.parent.user.first_name} {obj.parent.user.last_name}"
-    get_full_name.short_description = 'Nom complet'
-
-    def get_allergies(self, obj):
-        return ", ".join([allergy.name for allergy in obj.allergies.all()])
-    get_allergies.short_description = 'Allergies'
-
-    def get_parent(self, obj):
-        return obj.parent
-    get_parent.short_description = 'Parent'
-
-
-@admin.register(Allergy)
-class AllergyAdmin(admin.ModelAdmin):
-    list_display = ('name', 'severity')
-    list_filter = ('severity',)
-    search_fields = ['name']
-
-
-@admin.register(Parent)
-class ParentAdmin(admin.ModelAdmin):
-    list_display = ('get_full_name', 'email', 'phone_number', 'city')
-    list_filter = ('city', 'is_admin')
-    search_fields = ['user__first_name', 'user__last_name', 'email']
-
-    def get_full_name(self, obj):
-        return f"{obj.user.first_name} {obj.user.last_name}"
-    get_full_name.short_description = "Nom complet"
-
-
-"""
-L'administration peut voir facilement la liste des étudiants avec leurs allergies
-Elle peut filtrer les étudiants par allergie, classe ou parent
-Elle peut rechercher un étudiant par son nom
-Elle peut voir rapidement quel parent est associé à quel étudiant
-"""
+# Enregistrement des autres modèles
+admin.site.register(Address)
+admin.site.register(Parent)
+admin.site.register(SchoolClass)
+admin.site.register(Student)
+admin.site.register(SchoolZone)
+admin.site.register(Administration)
+admin.site.register(Holidays)
+admin.site.register(Allergy)

@@ -9,3 +9,12 @@ export default {
   name: 'FooterComponent',
 };
 </script>
+
+<style scoped>
+.footer {
+  background-color: #436F8A;
+  color: #FFFFFF;
+  padding: 1rem;
+  text-align: center;
+}
+</style>

@@ -1,9 +1,16 @@
 from datetime import timedelta
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Specifies the custom User model for authentication.
+AUTH_USER_MODEL = 'api.User'
 
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Charger les variables d'environnement depuis .env
+load_dotenv()
 
 # Securing sensitive keys via environment variables
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'changecetsecret')
@@ -22,21 +29,24 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',  # If you use Django Rest Framework
-    'drf_yasg', # For Swagger
-    'api',  # Add this line to include your application
+    'rest_framework_simplejwt',
+    'rest_framework',
+    'drf_yasg',
     'phonenumber_field',
     'corsheaders',
+    'api.apps.ApiConfig',
 ]
+
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
-    ],
-    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.openapi.AutoSchema',
 }
+
 # Middleware
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -126,6 +136,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
+    'TOKEN_OBTAIN_SERIALIZER': 'api.serializers.MyTokenObtainPairSerializer',
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
@@ -134,4 +145,26 @@ SIMPLE_JWT = {
 
 SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,
+}
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'CRITICAL',  # Désactive quasiment tous les logs
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'CRITICAL',  # Désactive les logs Django sauf en cas d'erreur critique
+            'propagate': True,
+        },
+    },
 }
