@@ -3,21 +3,21 @@
     <h1>Connexion Administration</h1>
     <form @submit.prevent="login">
       <div class="form-group">
-        <label for="username">Nom d'utilisateur</label>
-        <input id="username" v-model="username" type="text" required>
+        <label for="username">Email</label>
+        <input id="username" v-model="username" type="email" required>
       </div>
       <div class="form-group">
         <label for="password">Mot de passe</label>
         <div class="password-input">
-          <input 
-            id="password" 
-            v-model="password" 
-            :type="showPassword ? 'text' : 'password'" 
+          <input
+            id="password"
+            v-model="password"
+            :type="showPassword ? 'text' : 'password'"
             required
           >
-          <button 
-            type="button" 
-            @click="togglePasswordVisibility" 
+          <button
+            type="button"
+            @click="togglePasswordVisibility"
             class="toggle-password"
           >
             {{ showPassword ? 'Cacher' : 'Afficher' }}
@@ -25,7 +25,7 @@
         </div>
       </div>
       <button type="submit" class="submit-btn" :disabled="isLoading">
-        {{ isLoading ? 'Connexion...' : 'Se connecter' }}
+        {{ isLoading ? 'Connexion en cours...' : 'Se connecter' }}
       </button>
     </form>
     <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
@@ -33,10 +33,13 @@
 </template>
 
 <script>
-import api from '@/http-common';
+import { useAuthStore } from '@/stores/auth';
 
 export default {
-  name: 'AdminLogin',
+  setup() {
+    const authStore = useAuthStore();
+    return { authStore };
+  },
   data() {
     return {
       username: '',
@@ -47,39 +50,28 @@ export default {
     };
   },
   methods: {
-    togglePasswordVisibility() {
-      this.showPassword = !this.showPassword;
-    },
     async login() {
       this.isLoading = true;
       this.errorMessage = '';
       try {
-        console.log('Attempting login');
-        const response = await api.post('token/', {
-          json: {
-            username: this.username,
-            password: this.password,
-          }
-        }).json();
+        await this.authStore.login(this.username, this.password);
 
-        console.log('Login response:', response);
-
-        if (response.access) {
-          localStorage.setItem('token', response.access);
-          localStorage.setItem('userType', 'admin');
-          console.log('Login successful, redirecting to AdminDashboard');
-          await this.$router.push('/admin');
+        if (this.authStore.userType === 'school_admin') {
+          this.$router.push({ name: 'AdminDashboard' });
         } else {
-          throw new Error('Token non reçu');
+          throw new Error('Unauthorized user type');
         }
       } catch (error) {
-        console.error('Erreur lors de la connexion:', error);
-        this.errorMessage = "Nom d'utilisateur ou mot de passe incorrect.";
+        console.error('Login failed:', error);
+        this.errorMessage = "Erreur de connexion. Veuillez vérifier vos identifiants et réessayer.";
       } finally {
         this.isLoading = false;
       }
     },
-  },
+    togglePasswordVisibility() {
+      this.showPassword = !this.showPassword;
+    }
+  }
 };
 </script>
 

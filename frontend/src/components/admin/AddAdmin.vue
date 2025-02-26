@@ -1,7 +1,7 @@
 <template>
-  <div class="create-admin">
-    <h1>{{ isInitialCreation ? 'Créer un Administrateur' : 'Ajouter un Administrateur' }}</h1>
-    <form @submit.prevent="createAdmin">
+  <div class="add-admin">
+    <h1>Ajouter un Administrateur</h1>
+    <form @submit.prevent="addAdmin">
       <h2>Informations utilisateur</h2>
       <input v-model="userData.email" type="email" placeholder="Email" required />
       <input v-model="userData.password" type="password" placeholder="Mot de passe" required />
@@ -24,7 +24,7 @@
         </option>
       </select>
 
-      <button type="submit" class="submit-btn">{{ isInitialCreation ? 'Créer l\'administrateur' : 'Ajouter l\'administrateur' }}</button>
+      <button type="submit" class="submit-btn">Ajouter l'administrateur</button>
     </form>
     <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
     <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
@@ -33,10 +33,10 @@
 
 <script>
 import api from '@/http-common';
-import { checkAdminExists } from '@/router';
+import { useAuthStore } from '@/stores/auth';
 
 export default {
-  name: 'CreateAdmin',
+  name: 'AddAdmin',
   data() {
     return {
       userData: {
@@ -61,12 +61,15 @@ export default {
       schoolZones: [],
       errorMessage: '',
       successMessage: '',
-      isInitialCreation: false,
     };
   },
   async created() {
+    const authStore = useAuthStore();
+    if (!authStore.isAuthenticated || authStore.userGroup !== 'school_admin') {
+      this.$router.push('/admin/login');
+      return;
+    }
     await this.fetchSchoolZones();
-    this.isInitialCreation = this.$route.name === 'CreateAdmin';
   },
   methods: {
     async fetchSchoolZones() {
@@ -77,7 +80,7 @@ export default {
         this.errorMessage = 'Erreur lors de la récupération des zones scolaires.';
       }
     },
-    async createAdmin() {
+    async addAdmin() {
       if (this.userData.password !== this.passwordConfirmation) {
         this.errorMessage = "Les mots de passe ne correspondent pas.";
         return;
@@ -102,29 +105,40 @@ export default {
 
         await api.post('register/', { json: requestData }).json();
 
-        this.successMessage = this.isInitialCreation
-          ? "L'administrateur a été créé avec succès. Redirection vers la page de connexion..."
-          : "L'administrateur a été ajouté avec succès.";
-
-        // Invalider le cache
-        checkAdminExists.invalidateCache();
-
-        setTimeout(() => {
-          this.$router.push(this.isInitialCreation ? '/admin/login' : '/admin').catch(() => {
-            this.errorMessage = "Erreur lors de la redirection. Veuillez vous connecter manuellement.";
-          });
-        }, 3000);
+        this.successMessage = "L'administrateur a été ajouté avec succès.";
+        this.resetForm();
       } catch (error) {
-        console.error('Error creating admin:', error);
-        this.errorMessage = "Erreur lors de la création de l'administrateur. Veuillez réessayer.";
+        console.error('Error adding admin:', error);
+        this.errorMessage = "Erreur lors de l'ajout de l'administrateur. Veuillez réessayer.";
       }
+    },
+    resetForm() {
+      this.userData = {
+        email: '',
+        password: '',
+        first_name: '',
+        last_name: '',
+        user_type: 'school_admin',
+      };
+      this.passwordConfirmation = '';
+      this.addressData = {
+        address_line_1: '',
+        address_line_2: '',
+        postal_code: '',
+        city: '',
+        country: '',
+      };
+      this.adminData = {
+        zone: '',
+        invoice_edited: false,
+      };
     },
   },
 };
 </script>
 
 <style scoped>
-.create-admin {
+.add-admin {
   max-width: 600px;
   margin: 0 auto;
   padding: 20px;
