@@ -54,12 +54,9 @@ export default {
       this.isLoading = true;
       this.errorMessage = '';
       try {
-        console.log('Starting login process...');
         await this.authStore.login(this.username, this.password);
-        console.log('Login successful, user type:', this.authStore.userType);
 
         if (this.authStore.userType === 'school_admin') {
-          console.log('Redirecting to admin dashboard...');
           this.$router.push({ name: 'AdminDashboard' });
         } else {
           throw new Error('Unauthorized user type');

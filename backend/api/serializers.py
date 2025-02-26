@@ -1,8 +1,10 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.contrib.auth import get_user_model
-from .models import (SchoolZone, Parent, Student, Administration, Address,
-                     SchoolClass, Allergy, Holidays)
+
+from .models import (Address, Administration, Allergy, Holidays, Parent,
+                     SchoolClass, SchoolZone, Student)
+
 
 User = get_user_model()
 

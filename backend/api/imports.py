@@ -18,6 +18,7 @@ from django.core.validators import (
     RegexValidator
 )
 from django.utils.crypto import get_random_string
+from django.apps import apps
 
 # DRF imports
 from rest_framework import (

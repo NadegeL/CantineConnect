@@ -78,12 +78,9 @@ export default {
   },
   methods: {
     checkAdminAccess() {
-      console.log('Checking admin access, user type:', this.authStore.userType);
       if (this.authStore.userType !== 'school_admin') {
-        console.log('Unauthorized access, redirecting to login');
         this.$router.push('/admin/login');
       } else {
-        console.log('Admin access granted, fetching dashboard data');
         this.fetchDashboardData();
       }
     },
@@ -91,28 +88,24 @@ export default {
       try {
         const response = await api.get('admin/dashboard-stats/');
         this.stats = response.data;
-        console.log('Dashboard data fetched:', this.stats);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        // Gérer l'erreur (par exemple, afficher un message à l'utilisateur)
+        // Handle the error (e.g. display a message to the user)
       }
     },
     navigateTo(section) {
-      console.log(`Navigating to ${section}`);
-      // Implémenter la navigation vers les différentes sections
+      // Implement navigation to the various sections
     },
     async performAction(action) {
-      console.log(`Performing action: ${action}`);
-      // Implémenter les actions spécifiques
+      // Implement specific actions
     },
     async logout() {
       try {
         await this.authStore.logout();
-        console.log('Logout successful, redirecting to login page');
         this.$router.push('/admin/login');
       } catch (error) {
         console.error('Error during logout:', error);
-        // Gérer l'erreur de déconnexion
+        // Handling disconnection errors
       }
     }
   }
@@ -127,7 +120,7 @@ export default {
 }
 
 .header {
-  background-color: #436F8A; /* Bleu pétrole */
+  background-color: #436F8A;
   color: #FFFFFF;
   padding: 1rem;
   display: flex;
@@ -154,7 +147,7 @@ nav {
 }
 
 .btn-primary {
-  background-color: #FFB347; /* Orange doux */
+  background-color: #FFB347;
   color: #FFFFFF;
 }
 
@@ -163,7 +156,7 @@ nav {
 }
 
 .btn-logout {
-  background-color: #FF6F61; /* Rouge doux */
+  background-color: #FF6F61;
   color: #FFFFFF;
 }
 
@@ -172,7 +165,7 @@ nav {
 }
 
 .btn-secondary {
-  background-color: #A8D5BA; /* Vert doux */
+  background-color: #A8D5BA;
   color: #3A6351;
 }
 
@@ -200,7 +193,7 @@ nav {
 }
 
 .stat-card {
-  background-color: #AEDFF7; /* Bleu ciel doux */
+  background-color: #AEDFF7;
   padding: 1rem;
   border-radius: 6px;
   text-align: center;
@@ -213,7 +206,7 @@ nav {
 }
 
 .warning {
-  color: #FF6F61; /* Rouge doux pour les alertes */
+  color: #FF6F61;
 }
 
 .action-buttons, .calendar-actions {
@@ -223,7 +216,7 @@ nav {
 }
 
 h2 {
-  color: #436F8A; /* Bleu pétrole */
+  color: #436F8A;
   margin-bottom: 1rem;
 }
 
