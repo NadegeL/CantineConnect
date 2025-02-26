@@ -18,7 +18,10 @@
 
       <h2>Zone académique</h2>
       <label for="zone-select">Zone académique</label>
-      <select v-model="adminData.zone" id="zone-select" required>
+      <select v-model="adminData.zone" 
+              id="zone-select" 
+              required
+              class="zone-select">
         <option v-for="zone in schoolZones" :key="zone.id" :value="zone.name">
           {{ zone.name }}
         </option>
@@ -128,35 +131,39 @@ export default {
   max-width: 600px;
   margin: 0 auto;
   padding: 20px;
-  background-color: #FFFFFF;
+  background-color: #d8caae;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 h1, h2 {
-  color: #436F8A;
+  color: #2e5626;
 }
 
 input, select {
   width: 100%;
-  padding: 8px;
+  padding: 10px;
   margin-bottom: 10px;
-  border: 1px solid #E3E3E3;
+  border: 1px solid #ebe1d0;
   border-radius: 4px;
+  box-sizing: border-box;
+  height: 40px;
+  font-size: 16px;
 }
 
 .submit-btn {
   width: 100%;
   padding: 10px;
-  background-color: #FFB347;
+  background-color: #2e5626;
   color: #FFFFFF;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  height: 40px;
 }
 
 .submit-btn:hover {
-  background-color: #FFA500;
+  background-color: #4a7b2a;
 }
 
 .error-message {
@@ -168,5 +175,38 @@ input, select {
   color: #3A6351;
   margin-top: 10px;
   font-weight: bold;
+}
+
+select:focus {
+  outline-color: #2e5626;
+  box-shadow: 0 0 0 1px #2e5626;
+}
+
+select option:checked,
+select option:hover,
+select option:focus {
+  background-color: #2e5626;
+  color: #ebe1d0;
+}
+
+.zone-select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ebe1d0;
+  border-radius: 4px;
+  height: 40px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M1 4l5 5 5-5z' fill='%232e5626'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+  font-size: 16px;
+}
+
+.zone-select:focus {
+  outline: none;
+  border-bottom: #2e5626;
+  box-shadow: 0 0 0 1px #2e5626;
 }
 </style>
