@@ -17,6 +17,12 @@ export const useAuthStore = defineStore('auth', {
     userType: localStorage.getItem(STORAGE_KEYS.USER_TYPE) || null,
     userInfo: JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_INFO)) || null,
   }),
+  getters: {
+    isAuthenticated: (state) => !!state.token,
+    isParent: (state) => state.userType === USER_TYPES.PARENT,
+    isSchoolAdmin: (state) => state.userType === USER_TYPES.SCHOOL_ADMIN,
+    hasVueAccess: (state) => [USER_TYPES.PARENT, USER_TYPES.SCHOOL_ADMIN].includes(state.userType), // Accès uniquement aux 'parent' et 'school_admin'
+  },
   actions: {
     async login(email, password) {
       try {
@@ -73,6 +79,15 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER_TYPE);
       localStorage.removeItem(STORAGE_KEYS.USER_INFO);
+    },
+    async checkAuth() {
+      if (this.token) {
+        try {
+          await this.refreshToken();
+        } catch (error) {
+          this.clearAuthData();
+        }
+      }
     }
   },
 });
