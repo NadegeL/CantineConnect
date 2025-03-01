@@ -14,6 +14,6 @@ export default {
 .main-content {
   flex: 1;
   padding: 1rem;
-  background-color: #E3E3E3;
+  background-color: #e8f5e9;
 }
 </style>

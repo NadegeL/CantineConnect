@@ -15,7 +15,7 @@
         <h2>Statistiques</h2>
         <div class="stats-grid">
           <div class="stat-card">
-            <h3>Repas servis aujourd'hui</h3>
+            <h3> total repas / jour</h3>
             <p class="stat-number">{{ stats.mealsServedToday }}</p>
           </div>
           <div class="stat-card">
@@ -114,14 +114,14 @@ export default {
 
 <style scoped>
 .admin-dashboard {
-  background-color: #E3E3E3;
+  background-color: #e8f5e8;
   min-height: 100vh;
   font-family: Arial, sans-serif;
 }
 
 .header {
-  background-color: #436F8A;
-  color: #FFFFFF;
+  background-color: #2e5626;
+  color: #ebe1d0;
   padding: 1rem;
   display: flex;
   justify-content: space-between;
@@ -147,16 +147,16 @@ nav {
 }
 
 .btn-primary {
-  background-color: #FFB347;
+  background-color: #2e5626;
   color: #FFFFFF;
 }
 
 .btn-primary:hover {
-  background-color: #FFA500;
+  background-color: #4a7b2a;
 }
 
 .btn-logout {
-  background-color: #FF6F61;
+  background-color: #951509;
   color: #FFFFFF;
 }
 
@@ -180,7 +180,7 @@ nav {
 }
 
 .stats-section, .actions-section, .calendar-section {
-  background-color: #FFFFFF;
+  background-color: #ebe1d0;
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -193,16 +193,40 @@ nav {
 }
 
 .stat-card {
-  background-color: #AEDFF7;
-  padding: 1rem;
-  border-radius: 6px;
+  width: 200px;  /* Taille fixe */
+  height: 200px; /* Carré/Cercle parfait */
+  border-radius: 50%; /* Crée un cercle parfait */
+  border: 2px solid #2e5626; /* Liseré vert foncé */
+  background-color: transparent; /* Fond transparent */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.3s ease;
+  margin: 0 auto; /* Centre les cartes dans leur cellule de grille */
+  padding: 20px;
   text-align: center;
 }
 
+.stat-card:hover {
+  background-color: #e8f5e9; /* Vert clair s'illumine au survol */
+  cursor: pointer;
+}
+
+.stat-card h3 {
+  color: #2e5626;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 15px;
+  flex-grow: 0;
+}
+
 .stat-number {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: bold;
   color: #3A6351;
+  text-align: center;
+  margin-top: 10px;
 }
 
 .warning {
@@ -216,7 +240,7 @@ nav {
 }
 
 h2 {
-  color: #436F8A;
+  color: #2e5626;
   margin-bottom: 1rem;
 }
 

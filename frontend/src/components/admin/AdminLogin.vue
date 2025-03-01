@@ -80,13 +80,13 @@ export default {
   max-width: 400px;
   margin: 0 auto;
   padding: 20px;
-  background-color: #FFFFFF;
+  background-color: #d8caae;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
-  color: #436F8A;
+  color: #2e5626;
   text-align: center;
   margin-bottom: 20px;
 }
@@ -95,10 +95,19 @@ h1 {
   margin-bottom: 15px;
 }
 
+.form-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #E3E3E3;
+  border-radius: 4px;
+  box-sizing: border-box;
+  height: 40px;
+}
+
 label {
   display: block;
   margin-bottom: 5px;
-  color: #333;
+  color: #2e5626;
 }
 
 input {
@@ -113,7 +122,7 @@ input {
 }
 
 .toggle-password {
-  background-color: #FFB347;
+  background-color: #2e5626;
   color: white;
   border: none;
   padding: 8px 12px;
@@ -124,7 +133,7 @@ input {
 .submit-btn {
   width: 100%;
   padding: 10px;
-  background-color: #436F8A;
+  background-color: #2e5626;
   color: white;
   border: none;
   border-radius: 4px;
@@ -133,7 +142,7 @@ input {
 }
 
 .submit-btn:hover:not(:disabled) {
-  background-color: #365870;
+  background-color: #4a7b2a;
 }
 
 .submit-btn:disabled {
