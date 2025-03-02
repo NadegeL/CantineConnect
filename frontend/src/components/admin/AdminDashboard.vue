@@ -15,17 +15,17 @@
         <h2>Statistiques</h2>
         <div class="stats-grid">
           <div class="stat-card">
-            <h3> total repas / jour</h3>
-            <p class="stat-number">{{ stats.mealsServedToday }}</p>
+            <h3>total repas / jour</h3>
+            <p class="stat-number">{{ animatedMeals }}</p>
           </div>
           <div class="stat-card">
             <h3>Élèves inscrits</h3>
-            <p class="stat-number">{{ stats.enrolledStudents }}</p>
+            <p class="stat-number">{{ animatedStudents }}</p>
           </div>
           <div class="stat-card">
             <h3>Allergies signalées</h3>
             <p class="stat-number" :class="{ warning: stats.reportedAllergies > 20 }">
-              {{ stats.reportedAllergies }}
+              {{ animatedAllergies }}
             </p>
           </div>
         </div>
@@ -55,6 +55,7 @@
 </template>
 
 <script>
+import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import api from '@/http-common';
 
@@ -90,7 +91,6 @@ export default {
         this.stats = response.data;
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        // Handle the error (e.g. display a message to the user)
       }
     },
     navigateTo(section) {
@@ -105,8 +105,41 @@ export default {
         this.$router.push('/admin/login');
       } catch (error) {
         console.error('Error during logout:', error);
-        // Handling disconnection errors
       }
+    },
+    animateCounter(targetValue, duration = 2000) {
+      const currentValue = ref(0);
+      const startTime = Date.now();
+
+      const updateCounter = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const easeOutQuad = progress * (2 - progress);
+        currentValue.value = Math.round(targetValue * easeOutQuad);
+        
+        if (progress < 1) {
+          requestAnimationFrame(updateCounter);
+        } else {
+          currentValue.value = targetValue;
+        }
+        
+        return currentValue.value;
+      };
+
+      updateCounter();
+      return currentValue;
+    }
+  },
+  computed: {
+    animatedMeals() {
+      return this.animateCounter(this.stats.mealsServedToday).value;
+    },
+    animatedStudents() {
+      return this.animateCounter(this.stats.enrolledStudents).value;
+    },
+    animatedAllergies() {
+      return this.animateCounter(this.stats.reportedAllergies).value;
     }
   }
 };
@@ -190,35 +223,38 @@ nav {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
+  justify-content: center;
 }
 
 .stat-card {
-  width: 200px;  /* Taille fixe */
-  height: 200px; /* Carré/Cercle parfait */
-  border-radius: 50%; /* Crée un cercle parfait */
-  border: 2px solid #2e5626; /* Liseré vert foncé */
-  background-color: transparent; /* Fond transparent */
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 2px solid #2e5626;
+  background-color: transparent;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   transition: background-color 0.3s ease;
-  margin: 0 auto; /* Centre les cartes dans leur cellule de grille */
+  margin: 0 auto;
   padding: 20px;
   text-align: center;
+  position: relative;
 }
 
 .stat-card:hover {
-  background-color: #e8f5e9; /* Vert clair s'illumine au survol */
+  background-color: #e8f5e9;
   cursor: pointer;
 }
 
 .stat-card h3 {
   color: #2e5626;
   font-size: 0.9rem;
-  text-align: center;
-  margin-bottom: 15px;
-  flex-grow: 0;
+  margin-top: 15px;
+  position: relative;
+  top: 0;
+  bottom: auto;
 }
 
 .stat-number {
@@ -226,7 +262,10 @@ nav {
   font-weight: bold;
   color: #3A6351;
   text-align: center;
-  margin-top: 10px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .warning {
