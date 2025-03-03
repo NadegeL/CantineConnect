@@ -64,7 +64,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     class Meta:
         verbose_name = 'Utilisateur'
         verbose_name_plural = 'Utilisateurs'
-        
+
 # Address template
 class Address(models.Model):
     address_line_1 = models.CharField(max_length=255)
@@ -118,6 +118,8 @@ class Parent(BaseModel):
     is_activated = models.BooleanField(default=False)
     activation_token = models.CharField(
         max_length=50, unique=True, blank=True, null=True)
+    relation = models.CharField(
+        max_length=50, blank=True, null=True)
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
@@ -125,6 +127,7 @@ class Parent(BaseModel):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         Address.clean_orphans()
+
 
 # SchoolClass model
 class SchoolClass(BaseModel):

@@ -15,22 +15,21 @@
                     <div class="password-field">
                         <input :type="passwordVisible ? 'text' : 'password'" id="password" v-model="parent.password"
                             placeholder="Entrez un mot de passe" required class="input-field" />
-                        <button type="button" @click="togglePasswordVisibility" class="toggle-password-btn">👁️</button>
+                        <button type="button" @click="togglePasswordVisibility" class="toggle-password">
+                            {{ passwordVisible ? 'Cacher' : 'Afficher' }}
+                        </button>
                     </div>
                 </div>
                 <div class="form-actions">
-                    <button type="button" @click="generatePassword" class="generate-btn">Générer un mot de
-                        passe</button>
+                    <button type="button" @click="generatePassword" class="generate-btn">Générer un mot de passe</button>
                     <button type="submit" class="submit-btn">Créer</button>
                 </div>
             </form>
 
-            <!-- Message de confirmation après création -->
             <div v-if="showConfirmation" class="confirmation-message">
                 <p>Le parent a bien été créé !</p>
             </div>
 
-            <!-- Message d'erreur en cas de problème -->
             <div v-if="errorMessage" class="error-message">
                 <p>{{ errorMessage }}</p>
             </div>
@@ -122,25 +121,24 @@ export default {
 </script>
 
 <style scoped>
-/* Styles pour la modale, les champs et le message de confirmation */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.3);
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .modal {
-    background: white;
+    background: #d8caae;
     padding: 20px;
     border-radius: 8px;
-    width: 300px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 400px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     position: relative;
 }
 
@@ -152,75 +150,82 @@ export default {
     border: none;
     font-size: 24px;
     cursor: pointer;
-    color: #333;
+    color: #2e5626;
+}
+
+h2 {
+    color: #2e5626;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    color: #2e5626;
+}
+
+.input-field {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #E3E3E3;
+    border-radius: 4px;
+    box-sizing: border-box;
+    height: 40px;
 }
 
 .password-field {
     display: flex;
-    align-items: center;
 }
 
-.password-field button {
-    background: none;
+.toggle-password {
+    background-color: #2e5626;
+    color: white;
     border: none;
+    padding: 8px 12px;
     cursor: pointer;
-    font-size: 18px;
+    border-radius: 0 4px 4px 0;
+}
+
+.form-actions button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.generate-btn {
+    background-color: #4a7b2a;
+    color: white;
+}
+
+.submit-btn {
+    background-color: #2e5626;
+    color: white;
+}
+
+.submit-btn:hover, .generate-btn:hover {
+    background-color: #4a7b2a;
 }
 
 .confirmation-message {
     margin-top: 20px;
-    color: #4CAF50;
+    color: #2e5626;
     font-weight: bold;
+    text-align: center;
 }
 
 .error-message {
     margin-top: 20px;
-    color: #FF6347;
+    color: #d9534f;
     font-weight: bold;
-}
-
-.form-actions button {
-    margin-top: 10px;
-    width: 100%;
-    padding: 10px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-
-.input-field {
-    padding: 10px;
-    width: 100%;
-    margin-top: 8px;
-    margin-bottom: 16px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-.generate-btn {
-    background-color: #FFD700;
-    color: white;
-    padding: 10px;
-    border: none;
-    width: 100%;
-    cursor: pointer;
-}
-
-.submit-btn {
-    background-color: #007BFF;
-    color: white;
-    padding: 10px;
-    border: none;
-    width: 100%;
-    cursor: pointer;
-}
-
-.toggle-password-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
-    margin-left: 10px;
+    text-align: center;
 }
 </style>

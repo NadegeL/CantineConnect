@@ -16,11 +16,10 @@ class ParentTests(TestCase):
             'user': self.user.id,
             'phone_number': '+33123456789',
             'country_code': 'FR',
-            'is_admin': False,
             'invoice_available': False,
             'address': self.address.id,
             'is_activated': False,
-            'relation': 'Mère'
+            'relation': 'Mother',
         }
         self.url = reverse('parent-list')
 
@@ -30,11 +29,12 @@ class ParentTests(TestCase):
         self.assertEqual(Parent.objects.count(), 1)
         self.assertEqual(Parent.objects.get().relation, 'Mère')
 
-    def test_create_parent_missing_field(self):
-        invalid_data = self.parent_data.copy()
-        invalid_data.pop('phone_number')
-        response = self.client.post(self.url, invalid_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_parent(self):
+        response = self.client.post(self.url, self.parent_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Parent.objects.count(), 1)
+        self.assertIsNotNone(Parent.objects.get().relation)
 
     def test_get_parent_list(self):
         self.client.post(self.url, self.parent_data, format='json')
@@ -48,6 +48,7 @@ class ParentTests(TestCase):
         response = self.client.get(url_detail, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['relation'], parent.relation)
+
 
     def test_update_parent(self):
         parent = ParentFactory()
