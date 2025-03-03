@@ -12,13 +12,14 @@ const AdminDashboard = () => import('@/components/admin/AdminDashboard.vue');
 const ParentsLogin = () => import('@/components/parents/ParentsLogin.vue');
 const ParentsDashboard = () => import('@/components/parents/ParentsDashboard.vue');
 
-const ROUTE_NAMES = {
+
+export const ROUTE_NAMES = {
   HOME: 'Home',
   ADMIN_LOGIN: 'AdminLogin',
   ADMIN_DASHBOARD: 'AdminDashboard',
   CREATE_ADMIN: 'CreateAdmin',
   ADD_ADMIN: 'AddAdmin',
-  PARENTS_LOGIN: 'ParentsLogin',
+    PARENTS_LOGIN: 'ParentsLogin',
   PARENTS_DASHBOARD: 'ParentsDashboard',
   NOT_FOUND: 'NotFound',
   FORBIDDEN: 'Forbidden'
@@ -127,6 +128,11 @@ router.beforeEach(async (to, from, next) => {
     }
 
     if (to.matched.some(record => record.meta.requiresAuth)) {
+      const authStore = useAuthStore();
+      console.log('User info:', authStore.userInfo);
+      console.log('User type:', authStore.userType);
+      console.log('Required user type:', to.meta.userType);
+
       if (!isAuthenticated(to.meta.userType)) {
         console.log('User not authenticated or wrong user type');
         next({ name: ROUTE_NAMES.ADMIN_LOGIN });

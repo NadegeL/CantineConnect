@@ -40,11 +40,10 @@ class ParentFactory(factory.django.DjangoModelFactory):
     user = factory.SubFactory(UserFactory)
     phone_number = factory.Faker('phone_number', locale='fr_FR')
     country_code = 'FR'
-    is_admin = False
     invoice_available = False
     address = factory.SubFactory(AddressFactory)
     is_activated = False
-    relation = 'Mother'
+    relation = None
 
 
 # Factory for School Class
@@ -89,6 +88,7 @@ class SchoolZoneFactory(factory.django.DjangoModelFactory):
 
     name = factory.Iterator(['A', 'B', 'C'])
 
+
 # Factory for administration
 class AdministrationFactory(factory.django.DjangoModelFactory):
     class Meta:
@@ -96,7 +96,6 @@ class AdministrationFactory(factory.django.DjangoModelFactory):
 
     # This will create a user with firstname, lastname, etc.
     user = factory.SubFactory(UserFactory)
-    is_admin = True
     invoice_edited = factory.Faker('boolean')
     address = factory.SubFactory(AddressFactory)
     zone = factory.SubFactory(SchoolZoneFactory)

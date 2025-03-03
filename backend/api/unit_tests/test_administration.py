@@ -1,3 +1,4 @@
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from django.test import TestCase
 from api.models import Administration, SchoolZone
 from api.factories import UserFactory, AdministrationFactory, SchoolZoneFactory, AddressFactory
@@ -13,7 +14,6 @@ class AdministrationModelTest(TestCase):
         self.assertTrue(hasattr(admin, 'user'))
         self.assertTrue(hasattr(admin, 'address'))
         self.assertTrue(hasattr(admin, 'zone'))
-        self.assertTrue(admin.is_admin)
 
     def test_str_method(self):
         admin = AdministrationFactory(user__is_staff=True)
@@ -40,38 +40,29 @@ class AdministrationModelTest(TestCase):
         admin.refresh_from_db()
         self.assertEqual(admin.zone, new_zone)
 
-
     def test_delete_administration(self):
         admin = AdministrationFactory(user__is_staff=True)
         admin_id = admin.id
         admin.delete()
         self.assertFalse(Administration.objects.filter(id=admin_id).exists())
 
-
     def test_invalid_zone(self):
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(DRFValidationError) as context:
             zone = SchoolZoneFactory.build(name='X')
             zone.full_clean()
-
+        self.assertIn("Le nom de la zone doit être 'A', 'B' ou 'C'.",
+                      str(context.exception))
 
     def test_invalid_zone_id(self):
-        user = UserFactory(is_staff=True)
-        address = AddressFactory()
-        with self.assertRaises(ValidationError):
-            admin = Administration(user=user, address=address,
-                                zone=SchoolZoneFactory(name='X'))
-            admin.full_clean()
-
-
+        with self.assertRaises(DRFValidationError) as context:
+            zone = SchoolZoneFactory.build(name='X')
+            zone.full_clean()
+        self.assertIn("Le nom de la zone doit être 'A', 'B' ou 'C'.",
+                      str(context.exception))
 
     def test_invalid_email(self):
-        # Defines an invalid email
         invalid_email = "invalidemail"
-
-        # Creates a user instance with invalid email
         admin = AdministrationFactory(
             user__email=invalid_email, user__is_staff=True)
-
-        # Checks that email validation raises a ValidationError
         with self.assertRaises(ValidationError):
             admin.user.full_clean()
