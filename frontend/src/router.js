@@ -19,7 +19,7 @@ export const ROUTE_NAMES = {
   ADMIN_DASHBOARD: 'AdminDashboard',
   CREATE_ADMIN: 'CreateAdmin',
   ADD_ADMIN: 'AddAdmin',
-    PARENTS_LOGIN: 'ParentsLogin',
+  PARENTS_LOGIN: 'ParentsLogin',
   PARENTS_DASHBOARD: 'ParentsDashboard',
   NOT_FOUND: 'NotFound',
   FORBIDDEN: 'Forbidden'
