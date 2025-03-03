@@ -89,6 +89,15 @@ h1 {
     margin-bottom: 15px;
 }
 
+.form-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #E3E3E3;
+  border-radius: 4px;
+  box-sizing: border-box;
+  height: 40px;
+}
+
 label {
     display: block;
     margin-bottom: 5px;

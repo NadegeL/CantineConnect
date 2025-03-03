@@ -1,7 +1,17 @@
 <template>
-  <header class="header">
-    <h1>Bienvenue sur notre plateforme</h1>
-    <p>Votre espace de gestion et de collaboration</p>
+  <header style="background-color: #e8f5e9;" class="p-4 flex flex-col items-center">
+    <!-- Logo -->
+    <img src="@/assets/Logo.png" alt="Cantine Connect" class="h-24 mb-2" />
+    
+    <!-- Navigation -->
+    <nav class="mt-4 w-full max-w-2xl">
+      <ul class="flex justify-center space-x-6 text-green-800 font-medium">
+        <li class="hover:text-green-600 transition-colors cursor-pointer px-3 py-1">Accueil</li>
+        <li class="hover:text-green-600 transition-colors cursor-pointer px-3 py-1">Élèves</li>
+        <li class="hover:text-green-600 transition-colors cursor-pointer px-3 py-1">Repas</li>
+        <li class="hover:text-green-600 transition-colors cursor-pointer px-3 py-1">Facturation</li>
+      </ul>
+    </nav>
   </header>
 </template>
 
@@ -10,21 +20,3 @@ export default {
   name: 'HeaderComponent',
 };
 </script>
-
-<style scoped>
-.header {
-  background-color: #436F8A;
-  color: #FFFFFF;
-  padding: 1rem;
-  text-align: center;
-}
-
-h1 {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
-}
-
-p {
-  font-size: 1rem;
-}
-</style>

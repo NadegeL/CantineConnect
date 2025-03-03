@@ -19,6 +19,7 @@
         "autoprefixer": "^10.4.20",
         "postcss": "^8.5.1",
         "unocss": "^65.4.3",
+        "@unocss/preset-uno": "^0.53.4",
         "vite": "^6.0.11"
     },
     "resolutions": {
