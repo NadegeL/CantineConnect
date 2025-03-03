@@ -15,17 +15,17 @@
         <h2>Statistiques</h2>
         <div class="stats-grid">
           <div class="stat-card">
-            <h3>total repas / jour</h3>
-            <p class="stat-number">{{ animatedMeals }}</p>
+            <h3>Repas servis aujourd'hui</h3>
+            <p class="stat-number">{{ stats.mealsServedToday }}</p>
           </div>
           <div class="stat-card">
             <h3>Élèves inscrits</h3>
-            <p class="stat-number">{{ animatedStudents }}</p>
+            <p class="stat-number">{{ stats.enrolledStudents }}</p>
           </div>
           <div class="stat-card">
             <h3>Allergies signalées</h3>
             <p class="stat-number" :class="{ warning: stats.reportedAllergies > 20 }">
-              {{ animatedAllergies }}
+              {{ stats.reportedAllergies }}
             </p>
           </div>
         </div>
@@ -55,7 +55,6 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import api from '@/http-common';
 
@@ -91,6 +90,7 @@ export default {
         this.stats = response.data;
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        // Handle the error (e.g. display a message to the user)
       }
     },
     navigateTo(section) {
@@ -105,41 +105,8 @@ export default {
         this.$router.push('/admin/login');
       } catch (error) {
         console.error('Error during logout:', error);
+        // Handling disconnection errors
       }
-    },
-    animateCounter(targetValue, duration = 2000) {
-      const currentValue = ref(0);
-      const startTime = Date.now();
-
-      const updateCounter = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        const easeOutQuad = progress * (2 - progress);
-        currentValue.value = Math.round(targetValue * easeOutQuad);
-        
-        if (progress < 1) {
-          requestAnimationFrame(updateCounter);
-        } else {
-          currentValue.value = targetValue;
-        }
-        
-        return currentValue.value;
-      };
-
-      updateCounter();
-      return currentValue;
-    }
-  },
-  computed: {
-    animatedMeals() {
-      return this.animateCounter(this.stats.mealsServedToday).value;
-    },
-    animatedStudents() {
-      return this.animateCounter(this.stats.enrolledStudents).value;
-    },
-    animatedAllergies() {
-      return this.animateCounter(this.stats.reportedAllergies).value;
     }
   }
 };
@@ -147,14 +114,14 @@ export default {
 
 <style scoped>
 .admin-dashboard {
-  background-color: #e8f5e8;
+  background-color: #E3E3E3;
   min-height: 100vh;
   font-family: Arial, sans-serif;
 }
 
 .header {
-  background-color: #2e5626;
-  color: #ebe1d0;
+  background-color: #436F8A;
+  color: #FFFFFF;
   padding: 1rem;
   display: flex;
   justify-content: space-between;
@@ -171,7 +138,9 @@ nav {
   gap: 1rem;
 }
 
-.btn-primary, .btn-logout, .btn-secondary {
+.btn-primary,
+.btn-logout,
+.btn-secondary {
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;
@@ -180,16 +149,16 @@ nav {
 }
 
 .btn-primary {
-  background-color: #2e5626;
+  background-color: #FFB347;
   color: #FFFFFF;
 }
 
 .btn-primary:hover {
-  background-color: #4a7b2a;
+  background-color: #FFA500;
 }
 
 .btn-logout {
-  background-color: #951509;
+  background-color: #FF6F61;
   color: #FFFFFF;
 }
 
@@ -212,74 +181,47 @@ nav {
   gap: 2rem;
 }
 
-.stats-section, .actions-section, .calendar-section {
-  background-color: #ebe1d0;
+.stats-section,
+.actions-section,
+.calendar-section {
+  background-color: #FFFFFF;
   border-radius: 8px;
   padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
-  justify-content: center;
 }
 
 .stat-card {
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  border: 2px solid #2e5626;
-  background-color: transparent;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  transition: background-color 0.3s ease;
-  margin: 0 auto;
-  padding: 20px;
+  background-color: #AEDFF7;
+  padding: 1rem;
+  border-radius: 6px;
   text-align: center;
-  position: relative;
-}
-
-.stat-card:hover {
-  background-color: #e8f5e9;
-  cursor: pointer;
-}
-
-.stat-card h3 {
-  color: #2e5626;
-  font-size: 0.9rem;
-  margin-top: 15px;
-  position: relative;
-  top: 0;
-  bottom: auto;
 }
 
 .stat-number {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: bold;
   color: #3A6351;
-  text-align: center;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
 }
 
 .warning {
   color: #FF6F61;
 }
 
-.action-buttons, .calendar-actions {
+.action-buttons,
+.calendar-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
 }
 
 h2 {
-  color: #2e5626;
+  color: #436F8A;
   margin-bottom: 1rem;
 }
 

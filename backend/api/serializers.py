@@ -42,7 +42,8 @@ class AdministrationSerializer(serializers.ModelSerializer):
 class ParentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Parent
-        fields = ['phone_number', 'country_code', 'invoice_available']
+        fields = ['user', 'phone_number', 'country_code',
+                  'invoice_available', 'address', 'is_activated', 'relation']
 
 class RegisterSerializer(serializers.ModelSerializer):
     address = AddressSerializer(required=False)

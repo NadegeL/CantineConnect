@@ -33,7 +33,6 @@ class StudentTests(TestCase):
             user=self.user,
             phone_number='+33123456789',
             country_code='FR',
-            is_admin=False,
             invoice_available=True,
             address=self.address,
             is_activated=False
@@ -51,7 +50,6 @@ class StudentTests(TestCase):
             user=self.user2,
             phone_number='+33987654321',
             country_code='FR',
-            is_admin=False,
             invoice_available=True,
             address=self.address,
             is_activated=False
