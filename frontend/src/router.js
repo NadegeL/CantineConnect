@@ -36,7 +36,13 @@ const routes = [
     path: '/',
     component: MainView,
     children: [
-      { path: '', name: ROUTE_NAMES.HOME, component: Home },
+      { path: '', name: ROUTE_NAMES.HOME,
+        component: Home,
+        meta: {
+          hideNavbar: true,
+          hideHeader: true,
+        } },
+
       { path: 'parent-login', name: ROUTE_NAMES.PARENTS_LOGIN, component: ParentsLogin },
       {
         path: 'parent-dashboard',

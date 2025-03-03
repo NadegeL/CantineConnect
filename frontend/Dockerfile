@@ -12,6 +12,7 @@ COPY package.json yarn.lock ./
 
 # Install the base dependencies
 RUN yarn install
+RUN yarn add gsap
 
 # Copy the rest of the application files
 COPY . .

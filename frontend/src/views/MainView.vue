@@ -1,11 +1,11 @@
 <template>
   <div class="flex flex-col min-h-screen">
-    <Navbar />
-    <HeaderComponent />
+    <Navbar v-if="!$route.meta.hideNavbar" />
+    <HeaderComponent v-if="!$route.meta.hideHeader" />
     <MainContent>
       <router-view></router-view>
     </MainContent>
-    <FooterComponent />
+    <FooterComponent v-if="!$route.meta.hideFooter" />
   </div>
 </template>
 
