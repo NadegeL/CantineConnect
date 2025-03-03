@@ -1,26 +1,24 @@
 <template>
-  <div class="not-found">
-    <h1>404 - Page non trouvée</h1>
-    <p>La page que vous cherchez n'existe pas.</p>
-    <div class="button-container">
-      <button @click="goHome" class="button home-button">Accueil</button>
-    </div>
+  <div class="forbidden">
+    <h1>403 - Accès interdit</h1>
+    <p>Vous n'avez pas la permission d'accéder à cette page.</p>
+    <button @click="goBack" class="back-button">Retour</button>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'NotFound',
+  name: 'Forbidden',
   methods: {
-    goHome() {
-      this.$router.push('/');
+    goBack() {
+      this.$router.go(-1);
     }
   }
 };
 </script>
 
 <style scoped>
-.not-found {
+.forbidden {
   text-align: center;
   margin-top: 50px;
   color: #436F8A;
@@ -33,38 +31,30 @@ export default {
   margin-right: auto;
 }
 
-.not-found h1 {
+.forbidden h1 {
   font-size: 2.5em;
   color: #436F8A;
   margin-bottom: 20px;
 }
 
-.not-found p {
+.forbidden p {
   font-size: 1.2em;
   color: #3A6351;
   margin-bottom: 30px;
 }
 
-.button-container {
-  display: flex;
-  justify-content: center;
-}
-
-.button {
+.back-button {
+  background-color: #FFB347;
+  color: #FFFFFF;
+  border: none;
   padding: 10px 20px;
   font-size: 1em;
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  border: none;
 }
 
-.home-button {
-  background-color: #FFB347;
-  color: #FFFFFF;
-}
-
-.home-button:hover {
+.back-button:hover {
   background-color: #FF9914;
 }
 </style>

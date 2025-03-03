@@ -1,9 +1,78 @@
+# views.py
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from .models import User
+from .serializers import UserSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .imports import *
 from .app_imports import *
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import get_user_model
+from rest_framework import generics, permissions, viewsets, status
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from drf_yasg.utils import swagger_auto_schema
+from .models import (User, Parent, Student, Administration, Address,
+                     SchoolClass, Allergy, SchoolZone, Holidays)
+from .serializers import (UserSerializer, ParentSerializer, StudentSerializer,
+                          AdministrationSerializer, AddressSerializer,
+                          SchoolClassSerializer, AllergySerializer,
+                          SchoolZoneSerializer, HolidaysSerializer,
+                          RegisterSerializer, ParentProfileUpdateSerializer)
+from .services.holidays_service import HolidaysService
+import datetime
+from django.http import HttpResponse
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 def home(request):
-    return HttpResponse("Welcome to the CantineConnect API")
+    return HttpResponse("Bienvenue sur CantineConnect !")
+
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def current_user(request):
+    if request.user.is_authenticated:
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+    return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_initial_admin(request):
+    if User.objects.filter(is_staff=True, user_type='school_admin').exists():
+        return Response({"error": "Un administrateur du site existe déjà."}, status=403)
+
+    serializer = UserSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save(is_staff=True, user_type='school_admin')
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_admin(request):
+    if not request.user.is_staff:
+        return Response({"error": "Vous n'avez pas les droits pour ajouter un administrateur."}, status=403)
+
+    serializer = UserSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save(is_staff=True)
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -31,7 +100,6 @@ class UserViewSet(viewsets.ModelViewSet):
                 {"error": "accès refusé"},
                 status=status.HTTP_403_FORBIDDEN
             )
-
         email = request.data.get('email')
         if not email:
             return Response(
@@ -40,11 +108,12 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
         # générer password provisoire
-        temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+        temp_password = ''.join(random.choices(
+            string.ascii_letters + string.digits, k=10))
 
         try:
             # créer ou mettre à jour l'utilisateur
-            user, created = User.object.get_or_create(
+            user, created = User.objects.get_or_create(
                 email=email,
                 defaults={
                     'username': email,
@@ -61,9 +130,9 @@ class UserViewSet(viewsets.ModelViewSet):
                 Veuillez trouver vos identifiants pour vous connecter à CantineConnect:
                 Email: {email}
                 Mot de passe: {temp_password}
-                
+
                 À votre première connexion, vous serez invité à changer votre mot de passe.
-                
+
                 Cordialement,
                 L'équipe CantineConnect''',
                 'noreply@cantineconnect.fr',
@@ -141,6 +210,26 @@ class UserViewSet(viewsets.ModelViewSet):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class RegisterView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        print("Requête reçue pour l'enregistrement:", request.data)
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ParentProfileUpdateView(generics.UpdateAPIView):
+    serializer_class = ParentProfileUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user.parent_profile
 
 
 class ParentViewSet(viewsets.ModelViewSet):
@@ -268,6 +357,7 @@ class AllergyViewSet(viewsets.ModelViewSet):
 
 
 class SchoolZoneViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
     queryset = SchoolZone.objects.all()
     serializer_class = SchoolZoneSerializer
 
@@ -343,3 +433,64 @@ class HolidaysViewSet(viewsets.ModelViewSet):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class LogoutView(APIView):
+    def post(self, request):
+        try:
+            refresh_token = request.data["refresh"]
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response(status=status.HTTP_205_RESET_CONTENT)
+        except Exception as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        if not email or not password:
+            return Response({'error': 'Veuillez fournir un email et un mot de passe.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(request, username=email, password=password)
+
+        if user is None:
+            return Response({'error': 'Identifiants invalides.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not user.is_active:
+            return Response({'error': 'Ce compte est désactivé.'}, status=status.HTTP_403_FORBIDDEN)
+
+        user_type = 'unknown'
+        token = None
+
+        if user.groups.filter(name='Parent').exists():
+            user_type = 'parent'
+            token = RefreshToken.for_user(user)
+        elif user.groups.filter(name='Administration du Site').exists():
+            user_type = 'school_admin'
+            token = RefreshToken.for_user(user)
+        elif user.is_superuser and user.groups.filter(name='Administrateur du TDB de Django').exists():
+            user_type = 'django_admin'
+            token = RefreshToken.for_user(user)
+        else:
+            return Response({'error': 'Groupe utilisateur non reconnu.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if token is None:
+            return Response({'error': 'Erreur lors de la génération du token.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        token['user_type'] = user_type
+        token['email'] = user.email
+        token['first_name'] = user.first_name
+        token['last_name'] = user.last_name
+
+        return Response({
+            'access': str(token.access_token),
+            'refresh': str(token),
+            'user_type': user_type,
+            'user_id': user.id,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name
+        }, status=status.HTTP_200_OK)

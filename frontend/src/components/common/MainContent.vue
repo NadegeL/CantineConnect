@@ -1,5 +1,5 @@
 <template>
-  <main class="flex-1 p-4 bg-gray-100">
+  <main class="main-content">
     <slot></slot>
   </main>
 </template>
@@ -9,3 +9,11 @@ export default {
   name: 'MainContent',
 };
 </script>
+
+<style scoped>
+.main-content {
+  flex: 1;
+  padding: 1rem;
+  background-color: #e8f5e9;
+}
+</style>

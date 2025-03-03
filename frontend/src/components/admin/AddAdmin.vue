@@ -1,7 +1,7 @@
 <template>
-  <div class="create-admin">
-    <h1>{{ isInitialCreation ? 'Créer un Administrateur' : 'Ajouter un Administrateur' }}</h1>
-    <form @submit.prevent="createAdmin">
+  <div class="add-admin">
+    <h1>Ajouter un Administrateur</h1>
+    <form @submit.prevent="addAdmin">
       <h2>Informations utilisateur</h2>
       <input v-model="userData.email" type="email" placeholder="Email" required />
       <input v-model="userData.password" type="password" placeholder="Mot de passe" required />
@@ -18,16 +18,13 @@
 
       <h2>Zone académique</h2>
       <label for="zone-select">Zone académique</label>
-      <select v-model="adminData.zone" 
-              id="zone-select" 
-              required
-              class="zone-select">
+      <select v-model="adminData.zone" id="zone-select" required>
         <option v-for="zone in schoolZones" :key="zone.id" :value="zone.name">
           {{ zone.name }}
         </option>
       </select>
 
-      <button type="submit" class="submit-btn">{{ isInitialCreation ? 'Créer l\'administrateur' : 'Ajouter l\'administrateur' }}</button>
+      <button type="submit" class="submit-btn">Ajouter l'administrateur</button>
     </form>
     <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
     <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
@@ -36,10 +33,10 @@
 
 <script>
 import api from '@/http-common';
-import { checkAdminExists } from '@/router';
+import { useAuthStore } from '@/stores/auth';
 
 export default {
-  name: 'CreateAdmin',
+  name: 'AddAdmin',
   data() {
     return {
       userData: {
@@ -64,12 +61,15 @@ export default {
       schoolZones: [],
       errorMessage: '',
       successMessage: '',
-      isInitialCreation: false,
     };
   },
   async created() {
+    const authStore = useAuthStore();
+    if (!authStore.isAuthenticated || authStore.userGroup !== 'school_admin') {
+      this.$router.push('/admin/login');
+      return;
+    }
     await this.fetchSchoolZones();
-    this.isInitialCreation = this.$route.name === 'CreateAdmin';
   },
   methods: {
     async fetchSchoolZones() {
@@ -80,7 +80,7 @@ export default {
         this.errorMessage = 'Erreur lors de la récupération des zones scolaires.';
       }
     },
-    async createAdmin() {
+    async addAdmin() {
       if (this.userData.password !== this.passwordConfirmation) {
         this.errorMessage = "Les mots de passe ne correspondent pas.";
         return;
@@ -105,65 +105,72 @@ export default {
 
         await api.post('register/', { json: requestData }).json();
 
-        this.successMessage = this.isInitialCreation
-          ? "L'administrateur a été créé avec succès. Redirection vers la page de connexion..."
-          : "L'administrateur a été ajouté avec succès.";
-
-        // Invalider le cache
-        checkAdminExists.invalidateCache();
-
-        setTimeout(() => {
-          this.$router.push(this.isInitialCreation ? '/admin/login' : '/admin').catch(() => {
-            this.errorMessage = "Erreur lors de la redirection. Veuillez vous connecter manuellement.";
-          });
-        }, 3000);
+        this.successMessage = "L'administrateur a été ajouté avec succès.";
+        this.resetForm();
       } catch (error) {
-        console.error('Error creating admin:', error);
-        this.errorMessage = "Erreur lors de la création de l'administrateur. Veuillez réessayer.";
+        console.error('Error adding admin:', error);
+        this.errorMessage = "Erreur lors de l'ajout de l'administrateur. Veuillez réessayer.";
       }
+    },
+    resetForm() {
+      this.userData = {
+        email: '',
+        password: '',
+        first_name: '',
+        last_name: '',
+        user_type: 'school_admin',
+      };
+      this.passwordConfirmation = '';
+      this.addressData = {
+        address_line_1: '',
+        address_line_2: '',
+        postal_code: '',
+        city: '',
+        country: '',
+      };
+      this.adminData = {
+        zone: '',
+        invoice_edited: false,
+      };
     },
   },
 };
 </script>
 
 <style scoped>
-.create-admin {
+.add-admin {
   max-width: 600px;
   margin: 0 auto;
   padding: 20px;
-  background-color: #d8caae;
+  background-color: #FFFFFF;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 h1, h2 {
-  color: #2e5626;
+  color: #436F8A;
 }
 
 input, select {
   width: 100%;
-  padding: 10px;
+  padding: 8px;
   margin-bottom: 10px;
-  border: 1px solid #ebe1d0;
+  border: 1px solid #E3E3E3;
   border-radius: 4px;
-  box-sizing: border-box;
-  height: 40px;
-  font-size: 16px;
 }
 
 .submit-btn {
   width: 100%;
   padding: 10px;
-  background-color: #2e5626;
+  background-color: #FFB347;
   color: #FFFFFF;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  height: 40px;
 }
 
 .submit-btn:hover {
-  background-color: #4a7b2a;
+  background-color: #FFA500;
 }
 
 .error-message {
@@ -175,38 +182,5 @@ input, select {
   color: #3A6351;
   margin-top: 10px;
   font-weight: bold;
-}
-
-select:focus {
-  outline-color: #2e5626;
-  box-shadow: 0 0 0 1px #2e5626;
-}
-
-select option:checked,
-select option:hover,
-select option:focus {
-  background-color: #2e5626;
-  color: #ebe1d0;
-}
-
-.zone-select {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid #ebe1d0;
-  border-radius: 4px;
-  height: 40px;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M1 4l5 5 5-5z' fill='%232e5626'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  padding-right: 30px;
-  font-size: 16px;
-}
-
-.zone-select:focus {
-  outline: none;
-  border-bottom: #2e5626;
-  box-shadow: 0 0 0 1px #2e5626;
 }
 </style>

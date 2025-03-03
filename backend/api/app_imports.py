@@ -1,4 +1,4 @@
-# app_imports.py
+# Models
 from .models import (
     User,
     Parent,
@@ -11,6 +11,7 @@ from .models import (
     Holidays
 )
 
+# Serializers
 from .serializers import (
     UserSerializer,
     ParentSerializer,
@@ -20,5 +21,8 @@ from .serializers import (
     SchoolClassSerializer,
     AllergySerializer,
     SchoolZoneSerializer,
-    HolidaysSerializer
+    HolidaysSerializer,
+    RegisterSerializer,
+    ParentProfileUpdateSerializer,
+    MyTokenObtainPairSerializer
 )

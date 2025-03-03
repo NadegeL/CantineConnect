@@ -1,153 +1,300 @@
 <template>
-  <div class="admin-login">
-    <h1>Connexion Administration</h1>
-    <form @submit.prevent="login">
-      <div class="form-group">
-        <label for="username">Nom d'utilisateur</label>
-        <input id="username" v-model="username" type="text" required>
-      </div>
-      <div class="form-group">
-        <label for="password">Mot de passe</label>
-        <div class="password-input">
-          <input 
-            id="password" 
-            v-model="password" 
-            :type="showPassword ? 'text' : 'password'" 
-            required
-          >
-          <button 
-            type="button" 
-            @click="togglePasswordVisibility" 
-            class="toggle-password"
-          >
-            {{ showPassword ? 'Cacher' : 'Afficher' }}
-          </button>
+  <div class="admin-dashboard">
+    <header class="header">
+      <h1>Tableau de bord administrateur</h1>
+      <nav>
+        <button class="btn-primary" @click="navigateTo('meals')">Gérer les repas</button>
+        <button class="btn-primary" @click="navigateTo('students')">Gérer les élèves</button>
+        <button class="btn-primary" @click="navigateTo('reports')">Rapports</button>
+        <button @click="logout" class="btn-logout">Déconnexion</button>
+      </nav>
+    </header>
+
+    <main class="dashboard-content">
+      <section class="stats-section">
+        <h2>Statistiques</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <h3>total repas / jour</h3>
+            <p class="stat-number">{{ animatedMeals }}</p>
+          </div>
+          <div class="stat-card">
+            <h3>Élèves inscrits</h3>
+            <p class="stat-number">{{ animatedStudents }}</p>
+          </div>
+          <div class="stat-card">
+            <h3>Allergies signalées</h3>
+            <p class="stat-number" :class="{ warning: stats.reportedAllergies > 20 }">
+              {{ animatedAllergies }}
+            </p>
+          </div>
         </div>
-      </div>
-      <button type="submit" class="submit-btn" :disabled="isLoading">
-        {{ isLoading ? 'Connexion...' : 'Se connecter' }}
-      </button>
-    </form>
-    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+      </section>
+
+      <section class="actions-section">
+        <h2>Actions rapides</h2>
+        <div class="action-buttons">
+          <button class="btn-secondary" @click="performAction('addMeal')">Ajouter un repas</button>
+          <button class="btn-secondary" @click="performAction('enrollStudent')">Inscrire un élève</button>
+          <button class="btn-secondary" @click="performAction('generateReport')">Générer un rapport</button>
+          <button class="btn-secondary" @click="performAction('addAdmin')">Nouvel administrateur</button>
+          <button class="btn-secondary" @click="performAction('addParent')">Ajouter un parent</button>
+          <button class="btn-secondary" @click="performAction('correctData')">Corriger les données</button>
+        </div>
+      </section>
+
+      <section class="calendar-section">
+        <h2>Gestion du calendrier</h2>
+        <div class="calendar-actions">
+          <button class="btn-secondary" @click="performAction('setHolidays')">Définir les vacances</button>
+          <button class="btn-secondary" @click="performAction('setClosures')">Fermetures exceptionnelles</button>
+        </div>
+      </section>
+    </main>
   </div>
 </template>
 
 <script>
+import { ref, onMounted, computed } from 'vue';
+import { useAuthStore } from '@/stores/auth';
 import api from '@/http-common';
 
 export default {
-  name: 'AdminLogin',
+  name: 'AdminDashboard',
+  setup() {
+    const authStore = useAuthStore();
+    return { authStore };
+  },
   data() {
     return {
-      username: '',
-      password: '',
-      showPassword: false,
-      isLoading: false,
-      errorMessage: '',
+      stats: {
+        mealsServedToday: 0,
+        enrolledStudents: 0,
+        reportedAllergies: 0
+      }
     };
   },
+  created() {
+    this.checkAdminAccess();
+  },
   methods: {
-    togglePasswordVisibility() {
-      this.showPassword = !this.showPassword;
-    },
-    async login() {
-      this.isLoading = true;
-      this.errorMessage = '';
-      try {
-        const response = await api.post('api/token/', {
-          json: {
-            username: this.username,
-            password: this.password,
-          }
-        }).json();
-
-        if (response.access) {
-          localStorage.setItem('token', response.access);
-          localStorage.setItem('userType', 'admin');
-          this.$router.push('/admin');
-        } else {
-          throw new Error('Token non reçu');
-        }
-      } catch (error) {
-        console.error('Erreur lors de la connexion:', error);
-        this.errorMessage = "Nom d'utilisateur ou mot de passe incorrect.";
-      } finally {
-        this.isLoading = false;
+    checkAdminAccess() {
+      if (this.authStore.userType !== 'school_admin') {
+        this.$router.push('/admin/login');
+      } else {
+        this.fetchDashboardData();
       }
     },
+    async fetchDashboardData() {
+      try {
+        const response = await api.get('admin/dashboard-stats/');
+        this.stats = response.data;
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
+    },
+    navigateTo(section) {
+      // Implement navigation to the various sections
+    },
+    async performAction(action) {
+      // Implement specific actions
+    },
+    async logout() {
+      try {
+        await this.authStore.logout();
+        this.$router.push('/admin/login');
+      } catch (error) {
+        console.error('Error during logout:', error);
+      }
+    },
+    animateCounter(targetValue, duration = 2000) {
+      const currentValue = ref(0);
+      const startTime = Date.now();
+
+      const updateCounter = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const easeOutQuad = progress * (2 - progress);
+        currentValue.value = Math.round(targetValue * easeOutQuad);
+        
+        if (progress < 1) {
+          requestAnimationFrame(updateCounter);
+        } else {
+          currentValue.value = targetValue;
+        }
+        
+        return currentValue.value;
+      };
+
+      updateCounter();
+      return currentValue;
+    }
   },
+  computed: {
+    animatedMeals() {
+      return this.animateCounter(this.stats.mealsServedToday).value;
+    },
+    animatedStudents() {
+      return this.animateCounter(this.stats.enrolledStudents).value;
+    },
+    animatedAllergies() {
+      return this.animateCounter(this.stats.reportedAllergies).value;
+    }
+  }
 };
 </script>
 
 <style scoped>
-.admin-login {
-  max-width: 400px;
+.admin-dashboard {
+  background-color: #e8f5e8;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+.header {
+  background-color: #2e5626;
+  color: #ebe1d0;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-primary, .btn-logout, .btn-secondary {
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-primary {
+  background-color: #2e5626;
+  color: #FFFFFF;
+}
+
+.btn-primary:hover {
+  background-color: #4a7b2a;
+}
+
+.btn-logout {
+  background-color: #951509;
+  color: #FFFFFF;
+}
+
+.btn-logout:hover {
+  background-color: #FF5722;
+}
+
+.btn-secondary {
+  background-color: #A8D5BA;
+  color: #3A6351;
+}
+
+.btn-secondary:hover {
+  background-color: #8BC4A5;
+}
+
+.dashboard-content {
+  padding: 2rem;
+  display: grid;
+  gap: 2rem;
+}
+
+.stats-section, .actions-section, .calendar-section {
+  background-color: #ebe1d0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  justify-content: center;
+}
+
+.stat-card {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 2px solid #2e5626;
+  background-color: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  transition: background-color 0.3s ease;
   margin: 0 auto;
   padding: 20px;
-  background-color: #FFFFFF;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
-  color: #436F8A;
   text-align: center;
-  margin-bottom: 20px;
+  position: relative;
 }
 
-.form-group {
-  margin-bottom: 15px;
+.stat-card:hover {
+  background-color: #e8f5e9;
+  cursor: pointer;
 }
 
-label {
-  display: block;
-  margin-bottom: 5px;
-  color: #333;
+.stat-card h3 {
+  color: #2e5626;
+  font-size: 0.9rem;
+  margin-top: 15px;
+  position: relative;
+  top: 0;
+  bottom: auto;
 }
 
-input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #E3E3E3;
-  border-radius: 4px;
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #3A6351;
+  text-align: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
-.password-input {
+.warning {
+  color: #FF6F61;
+}
+
+.action-buttons, .calendar-actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-.toggle-password {
-  background-color: #FFB347;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  cursor: pointer;
-  border-radius: 0 4px 4px 0;
+h2 {
+  color: #2e5626;
+  margin-bottom: 1rem;
 }
 
-.submit-btn {
-  width: 100%;
-  padding: 10px;
-  background-color: #436F8A;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-}
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 
-.submit-btn:hover:not(:disabled) {
-  background-color: #365870;
-}
+  nav {
+    margin-top: 1rem;
+  }
 
-.submit-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.error-message {
-  color: #d9534f;
-  text-align: center;
-  margin-top: 10px;
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
