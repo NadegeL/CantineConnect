@@ -1,91 +1,145 @@
 <template>
   <div class="update-profile">
     <h1>Mettre à jour votre profil</h1>
-    <form @submit.prevent="submitForm">
-      <div class="form-group">
-        <label for="first_name">Prénom</label>
-        <input id="first_name" v-model="form.user.first_name" placeholder="Prénom" required>
-      </div>
 
-      <div class="form-group">
-        <label for="last_name">Nom</label>
-        <input id="last_name" v-model="form.user.last_name" placeholder="Nom" required>
-      </div>
+    <div class="tabs">
+      <button :class="{ active: activeTab === 'parent' }" @click="activeTab = 'parent'">Profil Parent</button>
+      <button v-for="(student, index) in students" :key="student.id"
+        :class="{ active: activeTab === `student-${index}` }" @click="activeTab = `student-${index}`">
+        {{ student.first_name }}
+      </button>
+    </div>
 
-      <div class="form-group">
-        <label for="email">Email actuel</label>
-        <input id="email" v-model="form.user.email" type="email" disabled>
-      </div>
+    <div v-if="activeTab === 'parent'">
+      <form @submit.prevent="submitForm">
+        <div class="form-group">
+          <label for="first_name">Prénom</label>
+          <input id="first_name" v-model="form.user.first_name" placeholder="Prénom" required>
+        </div>
 
-      <div class="form-group">
-        <label for="new_email">Nouvel email (laisser vide si inchangé)</label>
-        <input id="new_email" v-model="form.user.new_email" type="email" placeholder="Nouveau email">
-      </div>
+        <div class="form-group">
+          <label for="last_name">Nom</label>
+          <input id="last_name" v-model="form.user.last_name" placeholder="Nom" required>
+        </div>
 
-      <div class="form-group">
-        <label for="new_password">Nouveau mot de passe</label>
-        <input id="new_password" v-model="form.new_password" type="password"
-          placeholder="Nouveau mot de passe (laisser vide si inchangé)">
-      </div>
+        <div class="form-group">
+          <label for="email">Email actuel</label>
+          <input id="email" v-model="form.user.email" type="email" disabled>
+        </div>
 
-      <div class="form-group">
-        <label for="confirm_password">Confirmer le nouveau mot de passe</label>
-        <input id="confirm_password" v-model="form.confirm_password" type="password"
-          placeholder="Confirmer le nouveau mot de passe">
-      </div>
+        <div class="form-group">
+          <label for="new_email">Nouvel email (laisser vide si inchangé)</label>
+          <input id="new_email" v-model="form.user.new_email" type="email" placeholder="Nouveau email">
+        </div>
 
-      <div class="form-group">
-        <label for="address_line_1">Adresse ligne 1</label>
-        <input id="address_line_1" v-model="form.address.address_line_1" placeholder="Adresse ligne 1" required>
-      </div>
+        <div class="form-group">
+          <label for="new_password">Nouveau mot de passe</label>
+          <input id="new_password" v-model="form.new_password" type="password"
+            placeholder="Nouveau mot de passe (laisser vide si inchangé)">
+        </div>
 
-      <div class="form-group">
-        <label for="address_line_2">Adresse ligne 2</label>
-        <input id="address_line_2" v-model="form.address.address_line_2" placeholder="Adresse ligne 2 (facultatif)">
-      </div>
+        <div class="form-group">
+          <label for="confirm_password">Confirmer le nouveau mot de passe</label>
+          <input id="confirm_password" v-model="form.confirm_password" type="password"
+            placeholder="Confirmer le nouveau mot de passe">
+        </div>
 
-      <div class="form-group">
-        <label for="postal_code">Code postal</label>
-        <input id="postal_code" v-model="form.address.postal_code" placeholder="Code postal" required>
-      </div>
+        <div class="form-group">
+          <label for="address_line_1">Adresse ligne 1</label>
+          <input id="address_line_1" v-model="form.address.address_line_1" placeholder="Adresse ligne 1" required>
+        </div>
 
-      <div class="form-group">
-        <label for="city">Ville</label>
-        <input id="city" v-model="form.address.city" placeholder="Ville" required>
-      </div>
+        <div class="form-group">
+          <label for="address_line_2">Adresse ligne 2</label>
+          <input id="address_line_2" v-model="form.address.address_line_2" placeholder="Adresse ligne 2 (facultatif)">
+        </div>
 
-      <div class="form-group">
-        <label for="country">Pays</label>
-        <input id="country" v-model="form.address.country" placeholder="Pays" required>
-      </div>
+        <div class="form-group">
+          <label for="postal_code">Code postal</label>
+          <input id="postal_code" v-model="form.address.postal_code" placeholder="Code postal" required>
+        </div>
 
-      <div class="form-group">
-        <label for="phone_number">Numéro de téléphone</label>
-        <vue-tel-input v-model="form.phone_number" :default-country="'FR'"
-          :preferred-countries="['FR', 'CH']"
-          :valid-characters-only="true" mode="international"
-          :dropdown-options="{ showFlags: true, showDialCodeInList: true, showSearchBox: true }"
-          :input-options="{ showDialCode: true, placeholder: 'Entrez votre numéro' }"
-          @validate="validatePhone"></vue-tel-input>
-      </div>
+        <div class="form-group">
+          <label for="city">Ville</label>
+          <input id="city" v-model="form.address.city" placeholder="Ville" required>
+        </div>
 
-      <div class="form-group">
-        <label for="relation">Relation avec l'enfant</label>
-        <input id="relation" v-model="form.relation" placeholder="Relation avec l'enfant (facultatif)">
-      </div>
+        <div class="form-group">
+          <label for="country">Pays</label>
+          <input id="country" v-model="form.address.country" placeholder="Pays" required>
+        </div>
 
-      <button type="submit" :disabled="isSubmitting">{{ isSubmitting ? 'Sauvegarde en cours...' : 'Sauvegarder'
-        }}</button>
-    </form>
-    <button @click="goBack" class="btn-back">Retour au tableau de bord</button>
+        <div class="form-group">
+          <label for="phone_number">Numéro de téléphone</label>
+          <vue-tel-input v-model="form.phone_number" :default-country="'FR'" :preferred-countries="['FR', 'CH']"
+            :valid-characters-only="true" mode="international"
+            :dropdown-options="{ showFlags: true, showDialCodeInList: true, showSearchBox: true }"
+            :input-options="{ showDialCode: true, placeholder: 'Entrez votre numéro' }"
+            @validate="validatePhone"></vue-tel-input>
+        </div>
+
+        <div class="form-group">
+          <label for="relation">Relation avec l'enfant</label>
+          <input id="relation" v-model="form.relation" placeholder="Relation avec l'enfant (facultatif)">
+        </div>
+      </form>
+    </div>
+
+    <div v-for="(student, index) in students" :key="student.id" v-show="activeTab === `student-${index}`">
+      <form @submit.prevent="submitStudentForm(student.id)">
+        <div class="form-group">
+          <label :for="`student-first-name-${index}`">Prénom de l'élève</label>
+          <input :id="`student-first-name-${index}`" v-model="student.first_name" required>
+        </div>
+        <div class="form-group">
+          <label :for="`student-last-name-${index}`">Nom de l'élève</label>
+          <input :id="`student-last-name-${index}`" v-model="student.last_name" required>
+        </div>
+        <div class="form-group">
+          <label :for="`student-birth-date-${index}`">Date de naissance</label>
+          <input :id="`student-birth-date-${index}`" v-model="student.birth_date" type="date" required>
+        </div>
+        <div class="form-group">
+          <label :for="`student-grade-${index}`">Classe</label>
+          <select :id="`student-grade-${index}`" v-model="student.grade" required>
+            <option v-for="classe in classes" :key="classe.id" :value="classe.id">{{ classe.name }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Allergies</label>
+          <div v-for="(allergy, allergyIndex) in student.allergies" :key="allergyIndex" class="allergy-item">
+            <select v-model="student.allergies[allergyIndex]">
+              <option v-for="allergyOption in availableAllergies(student, allergyIndex)" :key="allergyOption.id"
+                :value="allergyOption.id">
+                {{ allergyOption.name }}
+              </option>
+            </select>
+            <button type="button" @click="removeAllergy(student, allergyIndex)">Supprimer</button>
+          </div>
+          <button type="button" @click="addAllergy(student)">Ajouter une allergie</button>
+        </div>
+      </form>
+    </div>
+
+
+    <div class="actions">
+      <button @click="goBack" class="btn-back">Retour au tableau de bord</button>
+      <button @click="updateAllProfiles" :disabled="isSubmitting">
+        {{ isSubmitting ? 'Sauvegarde en cours...' : 'Sauvegarder tous les profils' }}
+      </button>
+    </div>
+
     <p v-if="notice" class="notice" :class="{ 'error': isError }">{{ notice }}</p>
   </div>
 </template>
 
 <script setup>
+const classes = ref([]);
+const allergiesList = ref([]);
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '@/http-common';
+import { fetchStudents, updateStudent, fetchClasses, fetchAllergies } from '@/services/studentService';
 import { VueTelInput } from 'vue-tel-input';
 import 'vue-tel-input/vue-tel-input.css';
 
@@ -109,7 +163,8 @@ const form = ref({
   new_password: '',
   confirm_password: ''
 });
-
+const students = ref([]);
+const activeTab = ref('parent');
 const isValid = ref(false);
 const notice = ref(null);
 const isError = ref(false);
@@ -158,12 +213,40 @@ const fetchProfile = async () => {
       new_password: '',
       confirm_password: ''
     };
+
+    const studentsData = await fetchStudents();
+    students.value = studentsData;
+    console.log("Étudiants récupérés :", students.value);
   } catch (error) {
-    console.error('Erreur lors de la récupération du profil:', error);
+    console.error('Erreur lors de la récupération des données:', error);
     notice.value = 'Erreur lors de la récupération des données.';
     isError.value = true;
   }
 };
+
+const fetchAllData = async () => {
+  try {
+    const [studentsData, classesData, allergiesData] = await Promise.all([
+      fetchStudents(),
+      fetchClasses(),
+      fetchAllergies()
+    ]);
+
+    students.value = studentsData;
+    classes.value = classesData;
+    allergiesList.value = allergiesData;
+
+    console.log("Données récupérées :", { students: students.value, classes: classes.value, allergies: allergiesList.value });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des données:', error);
+    notice.value = 'Erreur lors de la récupération des données.';
+    isError.value = true;
+  }
+};
+
+onMounted(async () => {
+  await fetchAllData();
+});
 
 const submitForm = async () => {
   if (!isValid.value) {
@@ -211,15 +294,9 @@ const submitForm = async () => {
       dataToSend.user.new_password = form.value.new_password;
     }
 
-    const response = await api.patch('parent/profile/', { json: dataToSend });
-    const data = await response.json();
+    await api.patch('parent/profile/', { json: dataToSend });
     notice.value = 'Votre profil a été mis à jour avec succès.';
     isError.value = false;
-
-    setTimeout(() => {
-      notice.value = '';
-      router.push('/parent-dashboard');
-    }, 2000);
   } catch (error) {
     console.error('Erreur lors de la mise à jour du profil:', error);
     if (error.response) {
@@ -235,11 +312,75 @@ const submitForm = async () => {
   }
 };
 
+const submitStudentForm = async (studentId) => {
+  try {
+    const student = students.value.find(s => s.id === studentId);
+    await updateStudent(studentId, student);
+    notice.value = `Profil de l'élève ${student.first_name} mis à jour avec succès.`;
+    isError.value = false;
+  } catch (error) {
+    console.error(`Erreur lors de la mise à jour du profil de l'élève:`, error);
+    notice.value = `Erreur lors de la mise à jour du profil de l'élève.`;
+    isError.value = true;
+  }
+};
+
+const updateAllProfiles = async () => {
+  isSubmitting.value = true;
+  try {
+    await submitForm();
+    for (const student of students.value) {
+      await submitStudentForm(student.id);
+    }
+    notice.value = 'Tous les profils ont été mis à jour avec succès.';
+    isError.value = false;
+    setTimeout(() => {
+      notice.value = '';
+      router.push('/parent-dashboard');
+    }, 2000);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour des profils:', error);
+    notice.value = 'Une erreur est survenue lors de la mise à jour des profils.';
+    isError.value = true;
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
 const goBack = () => {
   router.push('/parent-dashboard');
 };
 
-onMounted(fetchProfile);
+const availableAllergies = (student, currentIndex) => {
+  const selectedAllergies = student.allergies.filter((_, index) => index !== currentIndex);
+  return allergiesList.value.filter(allergy => !selectedAllergies.includes(allergy.id));
+};
+
+const addAllergy = (student) => {
+  if (!student.allergies) {
+    student.allergies = [];
+  }
+  const availableOptions = availableAllergies(student, -1);
+  if (availableOptions.length > 0) {
+    student.allergies.push(null);
+  } else {
+    notice.value = "Toutes les allergies disponibles ont déjà été sélectionnées.";
+    isError.value = true;
+  }
+};
+
+const removeAllergy = (student, index) => {
+  if (student.allergies && student.allergies.length > index) {
+    student.allergies.splice(index, 1);
+  }
+};
+
+
+onMounted(async () => {
+  await fetchProfile();
+  console.log("Profil récupéré, étudiants :", students.value);
+});
+
 </script>
 
 <style scoped>
@@ -294,5 +435,29 @@ button:disabled {
 .notice.error {
   background-color: #ffebee;
   color: #c62828;
+}
+
+.tabs {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.tabs button {
+  padding: 10px 15px;
+  margin-right: 5px;
+  border: none;
+  background-color: #82828255;
+  cursor: pointer;
+}
+
+.tabs button.active {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
 }
 </style>
