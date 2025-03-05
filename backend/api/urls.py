@@ -1,28 +1,9 @@
 from django.urls import path, include
 from . import views
 from rest_framework.routers import DefaultRouter
-from .views import MyTokenObtainPairView, current_user, create_initial_admin, RegisterView, LogoutView
 from django.contrib.auth.views import LoginView
-from .views import LogoutView
-from .views import create_initial_admin
-from .views import RegisterView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import (
-    UserViewSet,
-    ParentViewSet,
-    StudentViewSet,
-    AdministrationViewSet,
-    AddressViewSet,
-    SchoolClassViewSet,
-    AllergyViewSet,
-    SchoolZoneViewSet,
-    HolidaysViewSet,
-    LogoutView,
-    ParentProfileView,
-    create_initial_admin,
-    add_admin,
-    home
-)
+from .views import *
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)

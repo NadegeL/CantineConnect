@@ -10,9 +10,11 @@
         <input v-model="form.address.postal_code" placeholder="Code postal" required>
         <input v-model="form.address.city" placeholder="Ville" required>
         <input v-model="form.address.country" placeholder="Pays" required>
-        <vue-tel-input v-model="form.phone_number" :default-country="'FR'" :preferred-countries="['FR', 'CH']"
+        <vue-tel-input v-model="form.phone_number"
+          :default-country="'FR'"
+          :preferred-countries="['FR', 'CH']"
           :valid-characters-only="true" mode="international"
-          :dropdown-options="{ showFlags: true, showDialCodeInList: true }"
+          :dropdown-options="{ showFlags: true, showDialCodeInList: true, showSearchBox: true }"
           :input-options="{ showDialCode: true, placeholder: 'Entrez votre numéro' }"
           @validate="validatePhone"></vue-tel-input>
         <input v-model="form.relation" placeholder="Relation avec l'enfant (facultatif)">
@@ -68,7 +70,6 @@ watch(() => props.parentData, (newData) => {
         last_name: newData.user?.last_name || ''
       }
     };
-    console.log("Données initiales parentData :", JSON.stringify(form.value, null, 2));
   }
 }, { immediate: true });
 
@@ -99,7 +100,6 @@ const submitForm = () => {
       }
     };
 
-    console.log("Données envoyées :", JSON.stringify(formData, null, 2));
     emit('save', formData);
     notice.value = 'Votre profil a été mis à jour avec succès.';
     setTimeout(() => {

@@ -15,21 +15,20 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token['user_type'] = user.user_type
-        print(f"User type in token: {user.user_type}")  # Ajoutez ce log
         return token
 
     def validate(self, attrs):
         data = super().validate(attrs)
         data['user_type'] = self.user.user_type
-        # Ajoutez ce log
-        print(f"User type in validate: {self.user.user_type}")
         return data
 
 
 class UserSerializer(serializers.ModelSerializer):
+    new_password = serializers.CharField(write_only=True, required=False)
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'user_type']
+        fields = ['id', 'email', 'first_name',
+                  'last_name', 'user_type', 'new_password']
         extra_kwargs = {'password': {'write_only': True}}
 
 

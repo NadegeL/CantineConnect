@@ -177,10 +177,8 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            # valider password
             validate_password(new_password, user)
 
-            # changer le mot de passe
             user.set_password(new_password)
             user.first_time_login = False
             user.save()
@@ -215,7 +213,6 @@ class RegisterView(APIView):
                     zone_name = administration_data.pop('zone')
                     zone, _ = SchoolZone.objects.get_or_create(name=zone_name)
 
-                    # Vérifiez si un profil d'administration existe déjà
                     admin_profile, created = Administration.objects.get_or_create(
                         user=user,
                         defaults={
@@ -226,7 +223,6 @@ class RegisterView(APIView):
                     )
 
                     if not created:
-                        # Update existing profile
                         admin_profile.address = address
                         admin_profile.zone = zone
                         admin_profile.invoice_edited = administration_data.get(
@@ -510,32 +506,31 @@ class LoginView(APIView):
         }, status=status.HTTP_200_OK)
 
 
-class ParentProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+class ParentProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = ParentProfileUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request):
-        parent = Parent.objects.get(user=request.user)
-        serializer = ParentProfileUpdateSerializer(parent)
-        return Response(serializer.data)
+    def get_object(self):
+        return self.request.user.parent
 
-    def put(self, request):
-        parent = Parent.objects.get(user=request.user)
-        serializer = ParentProfileUpdateSerializer(parent, data=request.data, partial=True)
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
+            user_data = serializer.validated_data.get('user', {})
+            user = instance.user
 
-    def patch(self, request):
-        print("Données reçues :", request.data)
-        parent = Parent.objects.get(user=request.user)
-        serializer = ParentProfileUpdateSerializer(
-            parent, data=request.data, partial=True
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            print("Erreurs de validation :", serializer.errors)
-            return Response(serializer.errors, status=400)
+            if 'email' in user_data:
+                if User.objects.filter(email=user_data['email']).exclude(id=user.id).exists():
+                    return Response({"user": {"email": ["Un utilisateur avec cet email existe déjà."]}},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                user.email = user_data['email']
 
+            if 'new_password' in user_data:
+                user.set_password(user_data['new_password'])
+
+            user.save()
+            self.perform_update(serializer)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
