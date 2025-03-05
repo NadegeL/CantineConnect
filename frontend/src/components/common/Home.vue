@@ -59,7 +59,7 @@ export default {
       })
     },
     goToParentsLogin() {
-      this.$router.push('/parents/login')
+      this.$router.push('/parent-login')
     },
     goToAdminLogin() {
       this.$router.push('/admin/login')

@@ -44,13 +44,20 @@ const routes = [
         } },
 
       { path: 'parent-login', name: ROUTE_NAMES.PARENTS_LOGIN, component: ParentsLogin },
+
       {
         path: 'parent-dashboard',
         name: ROUTE_NAMES.PARENTS_DASHBOARD,
         component: ParentsDashboard,
-        meta: { requiresAuth: true, userType: USER_TYPES.PARENT }
+        meta: { requiresAuth: true, userType: USER_TYPES.PARENT,
+          hideNavbar: true,
+          hideHeader: true,
+         }
+
       },
+
       { path: 'admin/login', name: ROUTE_NAMES.ADMIN_LOGIN, component: AdminLogin },
+      
       {
         path: 'create-admin',
         name: ROUTE_NAMES.CREATE_ADMIN,
@@ -82,7 +89,7 @@ const router = createRouter({
 
 let adminExistsCache = null;
 let lastCheckTime = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 5 * 60 * 1000;
 
 async function checkAdminExists() {
   const now = Date.now();
