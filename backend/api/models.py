@@ -108,7 +108,7 @@ class Address(models.Model):
 # Parent model
 class Parent(BaseModel):
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name='parent_profile')
+        User, on_delete=models.CASCADE, related_name='parent')
     phone_number = PhoneNumberField()
     invoice_available = models.BooleanField(default=False)
     address = models.ForeignKey(
