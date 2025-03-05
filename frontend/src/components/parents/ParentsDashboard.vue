@@ -71,10 +71,11 @@ export default {
           phone_number: profileData.phone_number,
           relation: profileData.relation,
           address: {
-            address_line_1: profileData.address,
-            city: profileData.city,
-            postal_code: profileData.postal_code,
-            country: profileData.country
+            address_line_1: profileData.address.address_line_1,
+            address_line_2: profileData.address.address_line_2,
+            city: profileData.address.city,
+            postal_code: profileData.address.postal_code,
+            country: profileData.address.country
           },
           user: {
             first_name: profileData.user.first_name,

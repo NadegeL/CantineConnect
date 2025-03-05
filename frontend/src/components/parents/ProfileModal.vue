@@ -85,11 +85,14 @@ const submitForm = () => {
   if (isValid.value) {
     const formData = {
       phone_number: form.value.phone_number.trim(),
-      address: form.value.address.address_line_1.trim(),
-      city: form.value.address.city.trim(),
-      postal_code: form.value.address.postal_code.trim(),
-      country: form.value.address.country.trim(),
       relation: form.value.relation.trim(),
+      address: {
+        address_line_1: form.value.address.address_line_1.trim(),
+        address_line_2: form.value.address.address_line_2.trim(),
+        city: form.value.address.city.trim(),
+        postal_code: form.value.address.postal_code.trim(),
+        country: form.value.address.country.trim()
+      },
       user: {
         first_name: form.value.user.first_name.trim(),
         last_name: form.value.user.last_name.trim()
