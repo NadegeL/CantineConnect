@@ -18,6 +18,7 @@ from .views import (
     SchoolZoneViewSet,
     HolidaysViewSet,
     LogoutView,
+    ParentProfileView,
     create_initial_admin,
     add_admin,
     home
@@ -43,6 +44,7 @@ urlpatterns = [
     path('create-initial-admin/', views.create_initial_admin,
          name='create-initial-admin'),
     path('add-admin/', views.add_admin, name='add-admin'),
+    path('parent/profile/', ParentProfileView.as_view(), name='parent-profile'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('login/', views.LoginView.as_view(), name='login'),
 ]

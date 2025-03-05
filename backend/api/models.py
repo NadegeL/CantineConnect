@@ -92,9 +92,9 @@ class Address(models.Model):
         if not self.postal_code.isdigit():
             raise ValidationError(
                 {'postal_code': "The zip code must be numeric only."})
-        if len(self.country) < 3:
+        if len(self.country) < 2:
             raise ValidationError(
-                {'country': "The country name must be at least 3 characters long."})
+                {'country': "The country name must be at least 2 characters long."})
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -110,8 +110,6 @@ class Parent(BaseModel):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='parent_profile')
     phone_number = PhoneNumberField()
-    country_code = models.CharField(
-        max_length=2, choices=[('FR', 'France'), ('CH', 'Suisse')])
     invoice_available = models.BooleanField(default=False)
     address = models.ForeignKey(
         'Address', on_delete=models.SET_NULL, null=True)

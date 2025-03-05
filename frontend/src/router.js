@@ -11,6 +11,7 @@ const AdminLogin = () => import('@/components/admin/AdminLogin.vue');
 const AdminDashboard = () => import('@/components/admin/AdminDashboard.vue');
 const ParentsLogin = () => import('@/components/parents/ParentsLogin.vue');
 const ParentsDashboard = () => import('@/components/parents/ParentsDashboard.vue');
+const UpdateProfile = () => import('@/components/parents/UpdateProfile.vue');
 
 
 export const ROUTE_NAMES = {
@@ -21,6 +22,7 @@ export const ROUTE_NAMES = {
   ADD_ADMIN: 'AddAdmin',
   PARENTS_LOGIN: 'ParentsLogin',
   PARENTS_DASHBOARD: 'ParentsDashboard',
+  UPDATE_PROFILE: 'UpdateProfile',
   NOT_FOUND: 'NotFound',
   FORBIDDEN: 'Forbidden'
 };
@@ -62,6 +64,12 @@ const routes = [
         name: ROUTE_NAMES.ADD_ADMIN,
         component: CreateAdmin,
         meta: { requiresAuth: true, userType: USER_TYPES.ADMIN }
+      },
+      {
+        path: '/parent/update-profile',
+        name: ROUTE_NAMES.UPDATE_PROFILE,
+        component: UpdateProfile,
+        meta: { requiresAuth: true, userType: USER_TYPES.PARENT }
       },
       { path: 'forbidden', name: ROUTE_NAMES.FORBIDDEN, component: Forbidden },
       { path: ':pathMatch(.*)*', name: ROUTE_NAMES.NOT_FOUND, component: NotFound },
