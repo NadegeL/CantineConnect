@@ -1,9 +1,6 @@
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
+from .permissions import IsParentUser
 from .models import User
-from .serializers import UserSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .imports import *
@@ -16,17 +13,9 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
-from .models import (User, Parent, Student, Administration, Address,
-                     SchoolClass, Allergy, SchoolZone, Holidays)
-from .serializers import (UserSerializer, ParentSerializer, StudentSerializer,
-                          AdministrationSerializer, AddressSerializer,
-                          SchoolClassSerializer, AllergySerializer,
-                          SchoolZoneSerializer, HolidaysSerializer,
-                          RegisterSerializer, ParentProfileUpdateSerializer)
 from .services.holidays_service import HolidaysService
 import datetime
-from django.http import HttpResponse
-from django.contrib.auth import get_user_model
+
 
 User = get_user_model()
 
@@ -188,10 +177,8 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            # valider password
             validate_password(new_password, user)
 
-            # changer le mot de passe
             user.set_password(new_password)
             user.first_time_login = False
             user.save()
@@ -215,10 +202,34 @@ class RegisterView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-        print("Requête reçue pour l'enregistrement:", request.data)
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            if user.user_type == 'school_admin':
+                address_data = request.data.get('address')
+                administration_data = request.data.get('administration')
+                if address_data and administration_data:
+                    address, _ = Address.objects.get_or_create(**address_data)
+                    zone_name = administration_data.pop('zone')
+                    zone, _ = SchoolZone.objects.get_or_create(name=zone_name)
+
+                    admin_profile, created = Administration.objects.get_or_create(
+                        user=user,
+                        defaults={
+                            'address': address,
+                            'zone': zone,
+                            **administration_data
+                        }
+                    )
+
+                    if not created:
+                        admin_profile.address = address
+                        admin_profile.zone = zone
+                        admin_profile.invoice_edited = administration_data.get(
+                            'invoice_edited', admin_profile.invoice_edited)
+                        admin_profile.save()
+                else:
+                    return Response({"error": "Address and administration data required for school admin"}, status=status.HTTP_400_BAD_REQUEST)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -493,3 +504,33 @@ class LoginView(APIView):
             'first_name': user.first_name,
             'last_name': user.last_name
         }, status=status.HTTP_200_OK)
+
+
+class ParentProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = ParentProfileUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user.parent
+
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            user_data = serializer.validated_data.get('user', {})
+            user = instance.user
+
+            if 'email' in user_data:
+                if User.objects.filter(email=user_data['email']).exclude(id=user.id).exists():
+                    return Response({"user": {"email": ["Un utilisateur avec cet email existe déjà."]}},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                user.email = user_data['email']
+
+            if 'new_password' in user_data:
+                user.set_password(user_data['new_password'])
+
+            user.save()
+            self.perform_update(serializer)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

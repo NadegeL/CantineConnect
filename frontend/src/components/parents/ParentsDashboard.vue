@@ -1,17 +1,15 @@
-import '@iconify-json/mdi/icons.json';
-
 <template>
   <div class="dashboard-page" :style="{ backgroundImage: `url(${logoPath})` }">
     <div class="overlay" :class="{ 'fade-in': backgroundLoaded }"></div>
 
     <!-- Boutons Déconnexion et Profil -->
     <div class="flex justify-between items-center px-4 py-3">
-      <button @click="logout"
+      <button @click="logoutUser"
         class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md flex items-center gap-2 transition-colors">
         <span class="i-mdi:logout w-5 h-5"></span>
         Déconnexion
       </button>
-      <button @click="updateProfile"
+      <button @click="goToUpdateProfile"
         class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md flex items-center gap-2 transition-colors">
         <span class="i-mdi:account-edit w-5 h-5"></span>
         Mettre à jour le profil
@@ -41,7 +39,8 @@ import '@iconify-json/mdi/icons.json';
                 </button>
               </div>
               <div class="ml-auto">
-                <div class="i-mdi-chevron-right text-xl text-green-800" :class="{ 'rotate-90': sections.enfants }"></div>
+                <div class="i-mdi-chevron-right text-xl text-green-800" :class="{ 'rotate-90': sections.enfants }">
+                </div>
               </div>
             </div>
             <!-- Contenu de la section Enfants -->
@@ -106,12 +105,13 @@ import '@iconify-json/mdi/icons.json';
               <div class="flex gap-2 ml-4">
                 <button @click.stop="addItem('justificatifs')"
                   class="bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded-md text-sm transition-colors flex items-center gap-1">
-                  <span class="i-mdi-plus w-4 h-4"></span>
+                  <span class="i-mdi:plus w-4 h-4"></span>
                   Ajouter
                 </button>
               </div>
               <div class="ml-auto">
-                <div class="i-mdi-chevron-right text-xl text-green-800" :class="{ 'rotate-90': sections.justificatifs }">
+                <div class="i-mdi-chevron-right text-xl text-green-800"
+                  :class="{ 'rotate-90': sections.justificatifs }">
                 </div>
               </div>
             </div>
@@ -127,9 +127,7 @@ import '@iconify-json/mdi/icons.json';
                 <p class="text-gray-600">Motif: {{ justif.motif }}</p>
               </div>
             </div>
-          </div>
-
-          <!-- Section Allergies/PAI -->
+          </div>... <!-- Section Allergies/PAI -->
           <div class="mb-4">
             <div class="flex items-center bg-white bg-opacity-80 p-4 rounded-lg cursor-pointer shadow-sm"
               @click="toggleSection('allergies')">
@@ -140,7 +138,7 @@ import '@iconify-json/mdi/icons.json';
               <div class="flex gap-2 ml-4">
                 <button @click.stop="addItem('allergies')"
                   class="bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded-md text-sm transition-colors flex items-center gap-1">
-                  <span class="i-mdi-plus w-4 h-4"></span>
+                  <span class="i-mdi:plus w-4 h-4"></span>
                   Ajouter
                 </button>
               </div>
@@ -182,14 +180,34 @@ import '@iconify-json/mdi/icons.json';
         </div>
       </div>
     </div>
+
+    <div v-if="showWelcomeModal" class="modal-overlay">
+      <div class="modal-content">
+        <WelcomeModal @close="openProfileModal" />
+      </div>
+    </div>
+
+    <div v-if="showProfileModal" class="modal-overlay">
+      <div class="modal-content">
+        <ProfileModal :parentData="parentData" @save="saveProfile" @close="closeProfileModal" />
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import WelcomeModal from './WelcomeModal.vue';
+import ProfileModal from './ProfileModal.vue';
+import { fetchParentProfile, saveProfile } from '@/services/parentService';
+import { logout } from '@/services/authService';
 import logoImage from '@/assets/Logo.png'
 
 export default {
   name: 'ParentDashboard',
+  components: { WelcomeModal, ProfileModal },
   data() {
     return {
       logoPath: logoImage,
@@ -213,8 +231,102 @@ export default {
       }
     }
   },
-  mounted() {
+  setup() {
+    const router = useRouter();
+    const showWelcomeModal = ref(false);
+    const showProfileModal = ref(false);
+    const parentData = ref(null);
+    const authStore = useAuthStore();
 
+    const isProfileComplete = () => {
+      return (
+        parentData.value &&
+        parentData.value.user.first_name &&
+        parentData.value.user.last_name &&
+        parentData.value.address &&
+        parentData.value.phone_number
+      );
+    };
+
+    const checkFirstLogin = async () => {
+      console.log('Vérification de la première connexion...');
+      if (!isProfileComplete()) {
+        console.log('Profil incomplet, affichage de la modale de bienvenue.');
+        setTimeout(() => {
+          showWelcomeModal.value = true;
+        }, 1500); // Délai de 1.5 secondes pour correspondre à l'animation
+      } else {
+        console.log('Profil complet, pas besoin d\'afficher la modale.');
+      }
+    };
+
+    const getParentProfile = async () => {
+      try {
+        console.log('Récupération du profil parent...');
+        const data = await fetchParentProfile();
+        parentData.value = data;
+        console.log('Profil parent récupéré :', parentData.value);
+      } catch (error) {
+        console.error('Erreur lors de la récupération du profil :', error);
+      }
+    };
+
+    const updateProfile = async (profileData) => {
+      try {
+        console.log('Envoi des données pour mise à jour du profil :', profileData);
+        await saveProfile(profileData);
+        await getParentProfile();
+        showProfileModal.value = false;
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour du profil :', error);
+      }
+    };
+
+    const openProfileModal = () => {
+      console.log('Ouverture de la modale pour compléter les informations.');
+      showWelcomeModal.value = false;
+      showProfileModal.value = true;
+    };
+
+    const closeProfileModal = () => {
+      console.log('Fermeture de la modale.');
+      showProfileModal.value = false;
+    };
+
+    const goToUpdateProfile = () => {
+      console.log('Redirection vers la page de mise à jour du profil.');
+      router.push('/parent/update-profile');
+    };
+
+    const logoutUser = async () => {
+      try {
+        console.log('Déconnexion...');
+        await logout();
+        router.push('/');
+      } catch (error) {
+        console.error('Erreur lors de la déconnexion:', error);
+      }
+    };
+
+    onMounted(async () => {
+      console.log('Montage du composant ParentsDashboard.');
+      await getParentProfile();
+      checkFirstLogin();
+    });
+
+    return {
+      showWelcomeModal,
+      showProfileModal,
+      parentData,
+      updateProfile,
+      openProfileModal,
+      closeProfileModal,
+      goToUpdateProfile,
+      logoutUser,
+      saveProfile // Ajoutez cette ligne pour retourner la méthode saveProfile
+    };
+  },
+  mounted() {
     this.hideNavbar();
     this.loadBackgroundImage();
     this.fetchData();
@@ -250,14 +362,6 @@ export default {
     },
     modifyItem(section) {
       console.log(`Modification d'un élément dans la section: ${section}`);
-    },
-    logout() {
-      // Méthode pour déconnecter l'utilisateur
-      console.log('Déconnexion...');
-    },
-    updateProfile() {
-      // Méthode pour mettre à jour le profil
-      console.log('Mise à jour du profil...');
     },
     getInitials(prenom, nom) {
       return `${prenom.charAt(0)}.${nom.charAt(0)}`;
@@ -325,5 +429,53 @@ export default {
 .content-container {
   position: relative;
   z-index: 10;
+}
+
+.parent-dashboard {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.btn-logout,
+.btn-update-profile {
+  margin: 10px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-logout {
+  background-color: #f44336;
+  color: white;
+}
+
+.btn-update-profile {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  /* Assurez-vous que ce z-index est suffisamment élevé */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  /* Assurez-vous que ce z-index est plus élevé que l'overlay */
 }
 </style>

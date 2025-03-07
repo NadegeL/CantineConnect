@@ -66,6 +66,8 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
         verbose_name_plural = 'Utilisateurs'
 
 # Address template
+
+
 class Address(models.Model):
     address_line_1 = models.CharField(max_length=255)
     address_line_2 = models.CharField(max_length=255, blank=True, null=True)
@@ -74,9 +76,8 @@ class Address(models.Model):
         max_length=20,
         validators=[
             RegexValidator(
-                # Valide un code postal entre 4 et 10 chiffres
-                regex=r'^\d{4,10}$',
-                message="The postal code must contain between 4 and 10 digits."
+                regex=r'^[A-Z0-9]{3,10}$',
+                message="The postal code must contain between 3 and 10 alphanumeric characters."
             )
         ]
     )
@@ -86,15 +87,11 @@ class Address(models.Model):
         return f"{self.address_line_1}, {self.city}, {self.country}"
 
     def clean(self):
-        """
-        Custom validation to check field consistency.
-        """
-        if not self.postal_code.isdigit():
+        super().clean()
+        if len(self.country) < 2:
             raise ValidationError(
-                {'postal_code': "The zip code must be numeric only."})
-        if len(self.country) < 3:
-            raise ValidationError(
-                {'country': "The country name must be at least 3 characters long."})
+                {'country': "The country name must contain at least 2 characters."}
+            )
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -106,12 +103,12 @@ class Address(models.Model):
                            administration__isnull=True).delete()
 
 # Parent model
+
+
 class Parent(BaseModel):
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name='parent_profile')
+        User, on_delete=models.CASCADE, related_name='parent')
     phone_number = PhoneNumberField()
-    country_code = models.CharField(
-        max_length=2, choices=[('FR', 'France'), ('CH', 'Suisse')])
     invoice_available = models.BooleanField(default=False)
     address = models.ForeignKey(
         'Address', on_delete=models.SET_NULL, null=True)
@@ -138,6 +135,8 @@ class SchoolClass(BaseModel):
         return self.name
 
 # Student model
+
+
 class Student(BaseModel):
     first_name = models.CharField(max_length=30, blank=False)
     last_name = models.CharField(max_length=30, blank=False)
@@ -167,7 +166,7 @@ class SchoolZone(models.Model):
         choices=ZONE_CHOICES,
         unique=True,
         verbose_name="Nom de la zone"
-        )
+    )
 
     def __str__(self):
         return self.get_name_display()
@@ -178,6 +177,8 @@ class SchoolZone(models.Model):
                 "Le nom de la zone doit être 'A', 'B' ou 'C'.")
 
 # Administration model
+
+
 class Administration(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='admin_profile')
@@ -212,10 +213,10 @@ class Holidays(BaseModel):
         blank=True,
         null=True,
         verbose_name="Description des vacances"
-        )
+    )
     school_year = models.CharField(max_length=9,
                                    validators=[
-                                   MinLengthValidator(9)],
+                                       MinLengthValidator(9)],
                                    verbose_name="Année scolaire"
                                    )
 
@@ -233,7 +234,7 @@ class Allergy(BaseModel):
         blank=True,
         null=True,
         verbose_name="Description détaillée"
-        )
+    )
     severity = models.CharField(
         max_length=20,
         choices=[
