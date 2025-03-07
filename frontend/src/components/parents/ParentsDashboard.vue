@@ -1,7 +1,7 @@
 <template>
   <div class="parent-dashboard">
     <h1>Tableau de bord Parent</h1>
-    <button @click="logout" class="btn-logout">Déconnexion</button>
+    <button @click="logoutUser" class="btn-logout">Déconnexion</button>
     <button @click="goToUpdateProfile" class="btn-update-profile">Mettre à jour le profil</button>
 
     <WelcomeModal v-if="showWelcomeModal" @close="openProfileModal" />
@@ -12,10 +12,11 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '@/http-common';
 import { useAuthStore } from '@/stores/auth';
 import WelcomeModal from './WelcomeModal.vue';
 import ProfileModal from './ProfileModal.vue';
+import { fetchParentProfile, saveProfile } from '@/services/parentService';
+import { logout } from '@/services/authService';
 
 export default {
   name: 'ParentsDashboard',
@@ -37,7 +38,6 @@ export default {
       );
     };
 
-
     const checkFirstLogin = async () => {
       console.log('Vérification de la première connexion...');
       if (!isProfileComplete()) {
@@ -48,14 +48,10 @@ export default {
       }
     };
 
-
-    const fetchParentProfile = async () => {
+    const getParentProfile = async () => {
       try {
         console.log('Récupération du profil parent...');
-        const response = await api.get('parent/profile/');
-        console.log('Réponse brute :', response);
-        const data = await response.json();
-        console.log('Données parsées :', data);
+        const data = await fetchParentProfile();
         parentData.value = data;
         console.log('Profil parent récupéré :', parentData.value);
       } catch (error) {
@@ -63,35 +59,14 @@ export default {
       }
     };
 
-
-    const saveProfile = async (profileData) => {
+    const updateProfile = async (profileData) => {
       try {
         console.log('Envoi des données pour mise à jour du profil :', profileData);
-        const dataToSend = {
-          phone_number: profileData.phone_number,
-          relation: profileData.relation,
-          address: {
-            address_line_1: profileData.address.address_line_1,
-            address_line_2: profileData.address.address_line_2,
-            city: profileData.address.city,
-            postal_code: profileData.address.postal_code,
-            country: profileData.address.country
-          },
-          user: {
-            first_name: profileData.user.first_name,
-            last_name: profileData.user.last_name
-          }
-        };
-        const response = await api.patch('parent/profile/', { json: dataToSend }).json();
-        console.log('Réponse API :', response);
-        await fetchParentProfile();
+        await saveProfile(profileData);
+        await getParentProfile();
         showProfileModal.value = false;
       } catch (error) {
         console.error('Erreur lors de la mise à jour du profil :', error);
-        if (error.response) {
-          const errorData = await error.response.json();
-          console.error('Erreur API :', errorData);
-        }
       }
     };
 
@@ -111,10 +86,10 @@ export default {
       router.push('/parent/update-profile');
     };
 
-    const logout = async () => {
+    const logoutUser = async () => {
       try {
         console.log('Déconnexion...');
-        await authStore.logout();
+        await logout();
         router.push('/');
       } catch (error) {
         console.error('Erreur lors de la déconnexion:', error);
@@ -123,7 +98,7 @@ export default {
 
     onMounted(async () => {
       console.log('Montage du composant ParentsDashboard.');
-      await fetchParentProfile();
+      await getParentProfile();
       checkFirstLogin();
     });
 
@@ -131,11 +106,11 @@ export default {
       showWelcomeModal,
       showProfileModal,
       parentData,
-      saveProfile,
+      updateProfile,
       openProfileModal,
       closeProfileModal,
       goToUpdateProfile,
-      logout,
+      logoutUser,
     };
   },
 };

@@ -3,15 +3,15 @@
     <h1>Mettre à jour votre profil</h1>
 
     <div class="tabs">
-      <button :class="{ active: activeTab === 'parent' }" @click="activeTab = 'parent'">Profil Parent</button>
+      <button :class="{ active: activeTab === 'parent' }" @click="switchTab('parent')">Profil Parent</button>
       <button v-for="(student, index) in students" :key="student.id"
-        :class="{ active: activeTab === `student-${index}` }" @click="activeTab = `student-${index}`">
+        :class="{ active: activeTab === `student-${index}` }" @click="switchTab(`student-${index}`)">
         {{ student.first_name }}
       </button>
     </div>
 
     <div v-if="activeTab === 'parent'">
-      <form @submit.prevent="submitForm">
+      <form @submit.prevent="submitParentForm">
         <div class="form-group">
           <label for="first_name">Prénom</label>
           <input id="first_name" v-model="form.user.first_name" placeholder="Prénom" required>
@@ -31,18 +31,19 @@
           <label for="new_email">Nouvel email (laisser vide si inchangé)</label>
           <input id="new_email" v-model="form.user.new_email" type="email" placeholder="Nouveau email">
         </div>
-
         <div class="form-group">
           <label for="new_password">Nouveau mot de passe</label>
-          <input id="new_password" v-model="form.new_password" type="password"
+          <input id="new_password" v-model="form.new_password" type="password" @input="validatePasswordsMatch"
             placeholder="Nouveau mot de passe (laisser vide si inchangé)">
         </div>
 
         <div class="form-group">
           <label for="confirm_password">Confirmer le nouveau mot de passe</label>
-          <input id="confirm_password" v-model="form.confirm_password" type="password"
+          <input id="confirm_password" v-model="form.confirm_password" type="password" @input="validatePasswordsMatch"
             placeholder="Confirmer le nouveau mot de passe">
         </div>
+
+        <p v-if="isError" class="error-message">{{ notice }}</p>
 
         <div class="form-group">
           <label for="address_line_1">Adresse ligne 1</label>
@@ -82,6 +83,8 @@
           <label for="relation">Relation avec l'enfant</label>
           <input id="relation" v-model="form.relation" placeholder="Relation avec l'enfant (facultatif)">
         </div>
+
+        <button type="submit" :disabled="isSubmitting || isError">Valider le profil parent</button>
       </form>
     </div>
 
@@ -118,15 +121,13 @@
           </div>
           <button type="button" @click="addAllergy(student)">Ajouter une allergie</button>
         </div>
+
+        <button type="submit" :disabled="isSubmitting || isError">Valider le profil de l'élève</button>
       </form>
     </div>
 
-
     <div class="actions">
       <button @click="goBack" class="btn-back">Retour au tableau de bord</button>
-      <button @click="updateAllProfiles" :disabled="isSubmitting">
-        {{ isSubmitting ? 'Sauvegarde en cours...' : 'Sauvegarder tous les profils' }}
-      </button>
     </div>
 
     <p v-if="notice" class="notice" :class="{ 'error': isError }">{{ notice }}</p>
@@ -134,11 +135,10 @@
 </template>
 
 <script setup>
-const classes = ref([]);
-const allergiesList = ref([]);
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '@/http-common';
+import { fetchParentProfile, saveProfile, validatePhone as validatePhoneNumber } from '@/services/parentService';
+import { validatePassword as validateUserPassword } from '@/services/profileService';
 import { fetchStudents, updateStudent, fetchClasses, fetchAllergies } from '@/services/studentService';
 import { VueTelInput } from 'vue-tel-input';
 import 'vue-tel-input/vue-tel-input.css';
@@ -164,11 +164,14 @@ const form = ref({
   confirm_password: ''
 });
 const students = ref([]);
+const classes = ref([]);
+const allergiesList = ref([]);
 const activeTab = ref('parent');
 const isValid = ref(false);
 const notice = ref(null);
 const isError = ref(false);
 const isSubmitting = ref(false);
+const hasUnsavedChanges = ref(false);
 
 const validatePhone = (isValidNumber) => {
   isValid.value = isValidNumber;
@@ -181,45 +184,36 @@ const validatePhone = (isValidNumber) => {
   }
 };
 
-const validatePassword = (password) => {
-  const minLength = 8;
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
-  const hasNonalphas = /\W/.test(password);
-  return password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasNonalphas;
+const validateEmail = (email) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
 };
 
 const fetchProfile = async () => {
   try {
-    const response = await api.get('parent/profile/');
-    const data = await response.json();
+    const profileData = await fetchParentProfile();
     form.value = {
-      phone_number: data.phone_number || '',
-      relation: data.relation || '',
+      phone_number: profileData.phone_number || '',
+      relation: profileData.relation || '',
       address: {
-        address_line_1: data.address?.address_line_1 || '',
-        address_line_2: data.address?.address_line_2 || '',
-        postal_code: data.address?.postal_code || '',
-        city: data.address?.city || '',
-        country: data.address?.country || '',
+        address_line_1: profileData.address?.address_line_1 || '',
+        address_line_2: profileData.address?.address_line_2 || '',
+        postal_code: profileData.address?.postal_code || '',
+        city: profileData.address?.city || '',
+        country: profileData.address?.country || '',
       },
       user: {
-        first_name: data.user?.first_name || '',
-        last_name: data.user?.last_name || '',
-        email: data.user?.email || '',
+        first_name: profileData.user?.first_name || '',
+        last_name: profileData.user?.last_name || '',
+        email: profileData.user?.email || '',
         new_email: ''
       },
       new_password: '',
       confirm_password: ''
     };
-
-    const studentsData = await fetchStudents();
-    students.value = studentsData;
-    console.log("Étudiants récupérés :", students.value);
   } catch (error) {
-    console.error('Erreur lors de la récupération des données:', error);
-    notice.value = 'Erreur lors de la récupération des données.';
+    console.error('Erreur lors de la récupération du profil:', error);
+    notice.value = 'Erreur lors de la récupération du profil.';
     isError.value = true;
   }
 };
@@ -235,8 +229,6 @@ const fetchAllData = async () => {
     students.value = studentsData;
     classes.value = classesData;
     allergiesList.value = allergiesData;
-
-    console.log("Données récupérées :", { students: students.value, classes: classes.value, allergies: allergiesList.value });
   } catch (error) {
     console.error('Erreur lors de la récupération des données:', error);
     notice.value = 'Erreur lors de la récupération des données.';
@@ -244,13 +236,28 @@ const fetchAllData = async () => {
   }
 };
 
-onMounted(async () => {
-  await fetchAllData();
-});
+const validatePasswordsMatch = () => {
+  if (form.value.new_password !== form.value.confirm_password) {
+    notice.value = 'Erreur : Les mots de passe ne correspondent pas.';
+    isError.value = true;
+  } else {
+    notice.value = '';
+    isError.value = false;
+  }
+};
 
-const submitForm = async () => {
+const submitParentForm = async () => {
+  isError.value = false;
+  notice.value = '';
+
   if (!isValid.value) {
     notice.value = 'Erreur : Numéro de téléphone invalide';
+    isError.value = true;
+    return;
+  }
+
+  if (form.value.user.new_email && !validateEmail(form.value.user.new_email)) {
+    notice.value = 'Erreur : L\'adresse email n\'est pas valide.';
     isError.value = true;
     return;
   }
@@ -261,51 +268,27 @@ const submitForm = async () => {
       isError.value = true;
       return;
     }
-    if (!validatePassword(form.value.new_password)) {
-      notice.value = 'Erreur : Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.';
+    const passwordValidation = validateUserPassword(form.value.new_password);
+    if (!passwordValidation) {
+      notice.value = `Erreur : Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.`;
       isError.value = true;
       return;
     }
   }
 
+  if (isError.value) {
+    return;
+  }
+
   isSubmitting.value = true;
   try {
-    const dataToSend = {
-      phone_number: form.value.phone_number.trim(),
-      relation: form.value.relation.trim(),
-      address: {
-        address_line_1: form.value.address.address_line_1.trim(),
-        address_line_2: form.value.address.address_line_2.trim(),
-        postal_code: form.value.address.postal_code.trim(),
-        city: form.value.address.city.trim(),
-        country: form.value.address.country.trim(),
-      },
-      user: {
-        first_name: form.value.user.first_name.trim(),
-        last_name: form.value.user.last_name.trim(),
-      }
-    };
-
-    if (form.value.user.new_email) {
-      dataToSend.user.email = form.value.user.new_email.trim();
-    }
-
-    if (form.value.new_password) {
-      dataToSend.user.new_password = form.value.new_password;
-    }
-
-    await api.patch('parent/profile/', { json: dataToSend });
+    await saveProfile(form.value);
     notice.value = 'Votre profil a été mis à jour avec succès.';
     isError.value = false;
+    hasUnsavedChanges.value = false;
   } catch (error) {
     console.error('Erreur lors de la mise à jour du profil:', error);
-    if (error.response) {
-      const errorData = await error.response.json();
-      console.error('Réponse d\'erreur:', errorData);
-      notice.value = `Erreur : ${JSON.stringify(errorData)}`;
-    } else {
-      notice.value = 'Erreur inconnue lors de la mise à jour.';
-    }
+    notice.value = 'Erreur lors de la mise à jour du profil.';
     isError.value = true;
   } finally {
     isSubmitting.value = false;
@@ -318,6 +301,7 @@ const submitStudentForm = async (studentId) => {
     await updateStudent(studentId, student);
     notice.value = `Profil de l'élève ${student.first_name} mis à jour avec succès.`;
     isError.value = false;
+    hasUnsavedChanges.value = false;
   } catch (error) {
     console.error(`Erreur lors de la mise à jour du profil de l'élève:`, error);
     notice.value = `Erreur lors de la mise à jour du profil de l'élève.`;
@@ -325,29 +309,22 @@ const submitStudentForm = async (studentId) => {
   }
 };
 
-const updateAllProfiles = async () => {
-  isSubmitting.value = true;
-  try {
-    await submitForm();
-    for (const student of students.value) {
-      await submitStudentForm(student.id);
+const switchTab = (tab) => {
+  if (hasUnsavedChanges.value) {
+    if (!confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment changer d\'onglet ?')) {
+      return;
     }
-    notice.value = 'Tous les profils ont été mis à jour avec succès.';
-    isError.value = false;
-    setTimeout(() => {
-      notice.value = '';
-      router.push('/parent-dashboard');
-    }, 2000);
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour des profils:', error);
-    notice.value = 'Une erreur est survenue lors de la mise à jour des profils.';
-    isError.value = true;
-  } finally {
-    isSubmitting.value = false;
   }
+  activeTab.value = tab;
+  hasUnsavedChanges.value = false;
 };
 
 const goBack = () => {
+  if (hasUnsavedChanges.value) {
+    if (!confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment quitter ?')) {
+      return;
+    }
+  }
   router.push('/parent-dashboard');
 };
 
@@ -363,6 +340,7 @@ const addAllergy = (student) => {
   const availableOptions = availableAllergies(student, -1);
   if (availableOptions.length > 0) {
     student.allergies.push(null);
+    hasUnsavedChanges.value = true;
   } else {
     notice.value = "Toutes les allergies disponibles ont déjà été sélectionnées.";
     isError.value = true;
@@ -372,15 +350,14 @@ const addAllergy = (student) => {
 const removeAllergy = (student, index) => {
   if (student.allergies && student.allergies.length > index) {
     student.allergies.splice(index, 1);
+    hasUnsavedChanges.value = true;
   }
 };
 
-
 onMounted(async () => {
   await fetchProfile();
-  console.log("Profil récupéré, étudiants :", students.value);
+  await fetchAllData();
 });
-
 </script>
 
 <style scoped>

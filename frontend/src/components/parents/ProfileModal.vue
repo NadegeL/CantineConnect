@@ -10,13 +10,11 @@
         <input v-model="form.address.postal_code" placeholder="Code postal" required>
         <input v-model="form.address.city" placeholder="Ville" required>
         <input v-model="form.address.country" placeholder="Pays" required>
-        <vue-tel-input v-model="form.phone_number"
-          :default-country="'FR'"
-          :preferred-countries="['FR', 'CH']"
+        <vue-tel-input v-model="form.phone_number" :default-country="'FR'" :preferred-countries="['FR', 'CH']"
           :valid-characters-only="true" mode="international"
           :dropdown-options="{ showFlags: true, showDialCodeInList: true, showSearchBox: true }"
           :input-options="{ showDialCode: true, placeholder: 'Entrez votre numéro' }"
-          @validate="validatePhone"></vue-tel-input>
+          @validate="validatePhoneNumber"></vue-tel-input>
         <input v-model="form.relation" placeholder="Relation avec l'enfant (facultatif)">
         <button type="submit">Sauvegarder</button>
       </form>
@@ -29,7 +27,8 @@
 import { ref, watch } from 'vue';
 import { VueTelInput } from 'vue-tel-input';
 import 'vue-tel-input/vue-tel-input.css';
-
+import { validatePhone, prepareProfileData } from '@/services/profileService';
+import { saveProfile } from '@/services/parentService';
 
 const props = defineProps(['parentData']);
 const emit = defineEmits(['save', 'close']);
@@ -73,39 +72,29 @@ watch(() => props.parentData, (newData) => {
   }
 }, { immediate: true });
 
-const validatePhone = (isValidNumber) => {
+const validatePhoneNumber = (isValidNumber) => {
   isValid.value = isValidNumber;
-  if (!isValidNumber) {
+  if (!isValid.value) {
     notice.value = 'Erreur : Numéro invalide';
   } else {
     notice.value = '';
   }
 };
 
-const submitForm = () => {
+const submitForm = async () => {
   if (isValid.value) {
-    const formData = {
-      phone_number: form.value.phone_number.trim(),
-      relation: form.value.relation.trim(),
-      address: {
-        address_line_1: form.value.address.address_line_1.trim(),
-        address_line_2: form.value.address.address_line_2.trim(),
-        city: form.value.address.city.trim(),
-        postal_code: form.value.address.postal_code.trim(),
-        country: form.value.address.country.trim()
-      },
-      user: {
-        first_name: form.value.user.first_name.trim(),
-        last_name: form.value.user.last_name.trim()
-      }
-    };
-
-    emit('save', formData);
-    notice.value = 'Votre profil a été mis à jour avec succès.';
-    setTimeout(() => {
-      notice.value = '';
-      emit('close');
-    }, 2000);
+    const formData = prepareProfileData(form.value);
+    try {
+      await saveProfile(formData);
+      emit('save', formData);
+      notice.value = 'Votre profil a été mis à jour avec succès.';
+      setTimeout(() => {
+        notice.value = '';
+        emit('close');
+      }, 2000);
+    } catch (error) {
+      notice.value = 'Erreur lors de la mise à jour du profil.';
+    }
   } else {
     notice.value = 'Erreur : Numéro invalide';
   }
