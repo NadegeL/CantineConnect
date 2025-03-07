@@ -26,6 +26,8 @@ urlpatterns = [
          name='create-initial-admin'),
     path('add-admin/', views.add_admin, name='add-admin'),
     path('parent/profile/', ParentProfileView.as_view(), name='parent-profile'),
+    path('students/<int:student_id>/allergies/create/',
+         create_allergy_for_student, name='create-allergy-for-student'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('login/', views.LoginView.as_view(), name='login'),
 ]

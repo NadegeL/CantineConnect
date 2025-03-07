@@ -8,7 +8,8 @@ from .models import (
     SchoolClass,
     Allergy,
     SchoolZone,
-    Holidays
+    Holidays,
+    StudentAllergy
 )
 
 # Serializers

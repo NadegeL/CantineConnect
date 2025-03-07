@@ -4,7 +4,7 @@ from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import (Address, Administration, Allergy, Holidays, Parent,
-                     SchoolClass, SchoolZone, Student)
+                     SchoolClass, SchoolZone, Student, StudentAllergy)
 
 
 User = get_user_model()
@@ -145,6 +145,11 @@ class ParentProfileUpdateSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
+class AllergySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Allergy
+        fields = '__all__'
+
 class SchoolZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = SchoolZone
@@ -154,8 +159,7 @@ class SchoolZoneSerializer(serializers.ModelSerializer):
 class StudentSerializer(serializers.ModelSerializer):
     parents = serializers.PrimaryKeyRelatedField(
         queryset=Parent.objects.all(), many=True)
-    allergies = serializers.PrimaryKeyRelatedField(
-        queryset=Allergy.objects.all(), many=True, required=False)
+    allergies = AllergySerializer(many=True, read_only=True)
 
     class Meta:
         model = Student
@@ -164,21 +168,20 @@ class StudentSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         parents_data = validated_data.pop('parents', [])
         allergies_data = validated_data.pop('allergies', [])
+
         student = Student.objects.create(**validated_data)
         student.parents.set(parents_data)
-        student.allergies.set(allergies_data)
+
+        for allergy_data in allergies_data:
+            allergy, created = Allergy.objects.get_or_create(**allergy_data)
+            StudentAllergy.objects.create(student=student, allergy=allergy)
+
         return student
 
 
 class SchoolClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = SchoolClass
-        fields = '__all__'
-
-
-class AllergySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Allergy
         fields = '__all__'
 
 

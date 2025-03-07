@@ -66,8 +66,6 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
         verbose_name_plural = 'Utilisateurs'
 
 # Address template
-
-
 class Address(models.Model):
     address_line_1 = models.CharField(max_length=255)
     address_line_2 = models.CharField(max_length=255, blank=True, null=True)
@@ -103,9 +101,7 @@ class Address(models.Model):
                            administration__isnull=True).delete()
 
 # Parent model
-
-
-class Parent(BaseModel):
+class Parent(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='parent')
     phone_number = PhoneNumberField()
@@ -134,25 +130,59 @@ class SchoolClass(BaseModel):
     def __str__(self):
         return self.name
 
+
+class Allergy(models.Model):
+    """Gérer les allergies et restrictions alimentaires"""
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Type d'allergies ou restrictions alimentaires"
+    )
+    description = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Description détaillée"
+    )
+    severity = models.CharField(
+        max_length=20,
+        choices=[
+            ('LOW', 'Faible'),
+            ('MEDIUM', 'Moyen'),
+            ('HIGH', 'Élevé'),
+            ('CRITICAL', 'Critique')
+        ],
+        default='LOW',
+        verbose_name="Niveau de sévérité"
+    )
+
+    def __str__(self):
+        return self.name
+
 # Student model
-
-
-class Student(BaseModel):
+class Student(models.Model):
     first_name = models.CharField(max_length=30, blank=False)
     last_name = models.CharField(max_length=30, blank=False)
     parents = models.ManyToManyField(
-        Parent, related_name='students', blank=True)
+        'Parent', related_name='students', blank=True)
     grade = models.ForeignKey(
-        SchoolClass, on_delete=models.SET_NULL, null=True, blank=True)
+        'SchoolClass', on_delete=models.SET_NULL, null=True, blank=True)
     birth_date = models.DateField()
     allergies = models.ManyToManyField(
-        'Allergy', blank=True, verbose_name="Allergies et restrictions alimentaires")
+        Allergy, through='StudentAllergy', blank=True, verbose_name="Allergies et restrictions alimentaires")
 
     def __str__(self):
         parent_names = ", ".join(
             [f"{parent.user.first_name} {parent.user.last_name}" for parent in self.parents.all()])
         return f"{self.first_name} {self.last_name} - {self.grade.name if self.grade else 'No Class'} (Parents: {parent_names})"
 
+
+class StudentAllergy(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    allergy = models.ForeignKey(Allergy, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.student} - {self.allergy}"
 
 class SchoolZone(models.Model):
     """Représente une zone scolaire"""
@@ -177,8 +207,6 @@ class SchoolZone(models.Model):
                 "Le nom de la zone doit être 'A', 'B' ou 'C'.")
 
 # Administration model
-
-
 class Administration(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='admin_profile')
@@ -222,34 +250,3 @@ class Holidays(BaseModel):
 
     def __str__(self):
         return f"{self.description} ({self.start_date} - {self.end_date})"
-
-
-class Allergy(BaseModel):
-    """Gérer les allergies et restrictions alimentaires"""
-    name = models.CharField(max_length=100,
-                            unique=True,
-                            verbose_name="Type d'allergies ou restrictions alimentaires"
-                            )
-    description = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name="Description détaillée"
-    )
-    severity = models.CharField(
-        max_length=20,
-        choices=[
-            ('LOW', 'Faible'),
-            ('MEDIUM', 'Moyen'),
-            ('HIGH', 'Élevé'),
-            ('CRITICAL', 'Critique')
-        ],
-        default='LOW',
-        verbose_name="Niveau de sévérité"
-    )
-
-    class Meta:
-        verbose_name = "Allergie"
-        verbose_name_plural = "Allergies"
-
-    def __str__(self):
-        return self.name
