@@ -1,74 +1,149 @@
 <template>
-  <div class="home">
-    <h1>Bienvenue sur CantineConnect</h1>
-    <p>Veuillez vous connecter pour accéder à votre espace.</p>
-    <div class="button-container">
-      <button @click="goToParentsLogin" class="btn-parents">Connexion Parents</button>
+  <div class="home-page" :style="{ backgroundImage: `url(${logoPath})` }">
+    <div class="overlay" :class="{ 'fade-in': backgroundLoaded }"></div>
+    
+    <div class="content">
+      <transition-group 
+        name="word-animation" 
+        tag="h1" 
+        class="welcome-title"
+      >
+        <span key="welcome1" class="word">Bienvenue</span>
+        <span key="welcome2" class="word">sur</span>
+        <span key="welcome3" class="word">Cantine</span>
+        <span key="welcome4" class="word">Connect</span>
+      </transition-group>
+
+      <div class="container-btns">
+        <button @click="goToParentsLogin" class="btn-parents">Connexion Parents</button>
+        <button @click="goToAdminLogin" class="btn-admin">Connexion Admin</button>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+import logoImage from '@/assets/Logo.png'
+
 export default {
-  name: 'Home',
+  name: 'HomePage',
+  data() {
+    return {
+      logoPath: logoImage,
+      backgroundLoaded: false
+    }
+  },
+  mounted() {
+    this.loadBackgroundImage()
+    this.animateWelcomeText()
+  },
   methods: {
+    loadBackgroundImage() {
+      const img = new Image()
+      img.src = this.logoPath
+      img.onload = () => {
+        this.backgroundLoaded = true
+      }
+    },
+    animateWelcomeText() {
+      const words = document.querySelectorAll('.word')
+      words.forEach((word, index) => {
+        word.style.opacity = '0'
+        word.style.transform = 'translateY(50px)'
+
+        setTimeout(() => {
+          word.style.transition = 'all 0.8s ease'
+          word.style.opacity = '1'
+          word.style.transform = 'translateY(0)'
+        }, (index + 1) * 300)
+      })
+    },
     goToParentsLogin() {
-      this.$router.push('/parent-login');
+      this.$router.push('/parent-login')
     },
     goToAdminLogin() {
-      this.$router.push('/admin/login');
-    },
-  },
-};
+      this.$router.push('/admin/login')
+    }
+  }
+}
 </script>
 
 <style scoped>
-.home {
+.home-page {
+  height: 100vh;
+  width: 100vw;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(232, 245, 233, 0.8); /* Couleur de fond vert clair semi-transparente */
+  opacity: 0;
+  transition: opacity 1.5s ease;
+}
+
+.overlay.fade-in {
+  opacity: 1;
+}
+
+.content {
   text-align: center;
-  padding: 50px;
-  background-color: #E3E3E3;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  z-index: 10;
+  position: relative;
 }
 
-h1 {
-  color: #436F8A;
-  margin-bottom: 20px;
-}
-
-p {
-  color: #333;
-  margin-bottom: 30px;
-}
-
-.button-container {
+.welcome-title {
   display: flex;
   justify-content: center;
-  gap: 20px;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
 }
 
-button {
-  padding: 12px 24px;
-  font-size: 16px;
-  cursor: pointer;
+.welcome-title span {
+  color: #2e5626;
+  font-size: 3rem;
+  opacity: 0;
+}
+
+.container-btns {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.btn-parents, .btn-admin {
+  padding: 0.8rem 1.5rem;
+  background-color: #2e5626;
+  color: white;
   border: none;
   border-radius: 5px;
+  cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
-.btn-parents {
-  background-color: #FFB347;
-  color: white;
+.btn-parents:hover, .btn-admin:hover {
+  background-color: #4a7b2a;
 }
 
-.btn-admin {
-  background-color: #436F8A;
-  color: white;
+/* Animations de transition */
+.word-animation-enter-active,
+.word-animation-leave-active {
+  transition: all 0.5s;
 }
 
-button:hover {
-  opacity: 0.9;
+.word-animation-enter,
+.word-animation-leave-to {
+  opacity: 0;
+  transform: translateY(30px);
 }
 </style>

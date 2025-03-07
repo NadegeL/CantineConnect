@@ -10,8 +10,12 @@ RUN apk update && apk upgrade
 # Copy the package.json and yarn.lock files
 COPY package.json yarn.lock ./
 
-# Install the base dependencies
+# Install the dependencies with Yarn (puisque vous semblez préférer Yarn)
 RUN yarn install
+# Ajout des icônes Iconify
+RUN yarn add -D @unocss/preset-icons @iconify-json/mdi @iconify-json/carbon
+# Ajout de gsap
+RUN yarn add gsap
 
 # Copy the rest of the application files
 COPY . .
