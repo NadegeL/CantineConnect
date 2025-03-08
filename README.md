@@ -1,4 +1,4 @@
-######################################################## 🍽️ Projet Portfolio - Gestion Cantine - 
+🍽️ Projet Portfolio - Gestion Cantine - 
 
 *🚧 En cours de construction 🚧*
 
