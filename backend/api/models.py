@@ -1,6 +1,7 @@
 from .imports import *
 from django.db import models
-
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -163,7 +164,7 @@ class Student(models.Model):
     first_name = models.CharField(max_length=30, blank=False)
     last_name = models.CharField(max_length=30, blank=False)
     parents = models.ManyToManyField(
-        'Parent', related_name='students', blank=True)
+        'Parent', through='ParentChildRelation', related_name='student', blank=True)
     grade = models.ForeignKey(
         'SchoolClass', on_delete=models.SET_NULL, null=True, blank=True)
     birth_date = models.DateField()
@@ -176,6 +177,14 @@ class Student(models.Model):
         return f"{self.first_name} {self.last_name} - {self.grade.name if self.grade else 'No Class'} (Parents: {parent_names})"
 
 
+class ParentChildRelation(models.Model):
+    parent = models.ForeignKey(Parent, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    relation_type = models.CharField(max_length=20)
+
+    def __str__(self):
+        return f"{self.parent.user.first_name} {self.parent.user.last_name} - {self.student.first_name} {self.student.last_name}"
+
 class StudentAllergy(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     allergy = models.ForeignKey(Allergy, on_delete=models.CASCADE)
@@ -183,6 +192,11 @@ class StudentAllergy(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self.allergy}"
+
+@receiver(post_delete, sender=StudentAllergy)
+def delete_allergy_if_no_associations(sender, instance, **kwargs):
+    if not StudentAllergy.objects.filter(allergy=instance.allergy).exists():
+        instance.allergy.delete()
 
 class SchoolZone(models.Model):
     """Représente une zone scolaire"""

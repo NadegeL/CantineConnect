@@ -20,55 +20,6 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def current_user(request):
-    if request.user.is_authenticated:
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
-    return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
-
-
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def create_initial_admin(request):
-    if User.objects.filter(is_staff=True, user_type='school_admin').exists():
-        return Response({"error": "Un administrateur du site existe déjà."}, status=403)
-
-    serializer = UserSerializer(data=request.data)
-    if serializer.is_valid():
-        user = serializer.save(is_staff=True, user_type='school_admin')
-        return Response(serializer.data, status=201)
-    return Response(serializer.errors, status=400)
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def add_admin(request):
-    if not request.user.is_staff:
-        return Response({"error": "Vous n'avez pas les droits pour ajouter un administrateur."}, status=403)
-
-    serializer = UserSerializer(data=request.data)
-    if serializer.is_valid():
-        user = serializer.save(is_staff=True)
-        return Response(serializer.data, status=201)
-    return Response(serializer.errors, status=400)
-
-
-@api_view(['POST'])
-def create_allergy_for_student(request, student_id):
-    try:
-        student = Student.objects.get(pk=student_id)
-    except Student.DoesNotExist:
-        return Response({"error": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    serializer = AllergySerializer(data=request.data)
-    if serializer.is_valid():
-        allergy = serializer.save()
-        StudentAllergy.objects.create(student=student, allergy=allergy)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -295,7 +246,7 @@ class StudentViewSet(viewsets.ModelViewSet):
                 'parents': [1],
                 'allergies': [
                     {'name': 'Lait de vache',
-                        'description': 'Allergie au lait', 'severity': 'MEDIUM'}
+                     'description': 'Allergie au lait', 'severity': 'MEDIUM'}
                 ]
             }
         }
@@ -303,6 +254,17 @@ class StudentViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
+    @action(detail=False, methods=['get'], url_path='by-parent/(?P<parent_id>\d+)')
+    def by_parent(self, request, parent_id=None):
+        if not parent_id:
+            return Response({"error": "parent_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            students = Student.objects.filter(parents__id=parent_id)
+            serializer = self.get_serializer(students, many=True)
+            return Response(serializer.data)
+        except Parent.DoesNotExist:
+            return Response({"error": "Parent not found"}, status=status.HTTP_404_NOT_FOUND)
 
 class AdministrationViewSet(viewsets.ModelViewSet):
     queryset = Administration.objects.all()

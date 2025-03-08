@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Address, Parent, SchoolClass, Student, SchoolZone, Administration, Holidays, Allergy, StudentAllergy
+from .models import User, Address, Parent, SchoolClass, Student, SchoolZone, Administration, Holidays, Allergy, StudentAllergy, ParentChildRelation
 
 # Définition de la classe CustomUserAdmin
 class CustomUserAdmin(UserAdmin):
@@ -35,3 +35,4 @@ admin.site.register(Administration)
 admin.site.register(Holidays)
 admin.site.register(Allergy)
 admin.site.register(StudentAllergy)
+admin.site.register(ParentChildRelation)
