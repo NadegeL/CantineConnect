@@ -102,6 +102,7 @@ Côté Front-end la priorité est donnée à la fluidité et à la practicité, 
 J'ai choisi d'utiliser VueJS associé à UnoCSS, une approche audacieuse pour les styles qui offre plus de flexibilité et de performance qu'un framework CSS traditionnel. 
 Voici un extrait simplifié du code utilisé pour le tableau de bord des parents, qui démontre l'ergonomie et l'interactivité de l'interface :
 
+```
 <template>
   <div class="dashboard-page" :style="{ backgroundImage: `url(${logoPath})` }">
     <div class="overlay" :class="{ 'fade-in': backgroundLoaded }"></div>
@@ -169,6 +170,8 @@ Voici un extrait simplifié du code utilisé pour le tableau de bord des parents
       </div>
     </div>
   </div>
+</template>
+
 <script>
 // Logique pour charger l'image de fond et l'animer
 export default {
@@ -196,7 +199,7 @@ export default {
   }
 }
 </script>
-</template>
+```
 
 L'utilisation d'UnoCSS permet de créer une interface non seulement esthétique mais aussi très performante grâce à :
 
