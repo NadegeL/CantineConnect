@@ -169,7 +169,6 @@ Voici un extrait simplifié du code utilisé pour le tableau de bord des parents
       </div>
     </div>
   </div>
-</template>
 <script>
 // Logique pour charger l'image de fond et l'animer
 export default {
@@ -197,6 +196,7 @@ export default {
   }
 }
 </script>
+</template>
 
 L'utilisation d'UnoCSS permet de créer une interface non seulement esthétique mais aussi très performante grâce à :
 
