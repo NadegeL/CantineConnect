@@ -170,7 +170,6 @@ Voici un extrait simplifié du code utilisé pour le tableau de bord des parents
     </div>
   </div>
 </template>
-
 <script>
 // Logique pour charger l'image de fond et l'animer
 export default {
