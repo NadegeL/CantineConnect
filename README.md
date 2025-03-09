@@ -203,17 +203,17 @@ export default {
 
 L'utilisation d'UnoCSS permet de créer une interface non seulement esthétique mais aussi très performante grâce à :
 
-+Des icônes directement accessibles via des classes (comme i-mdi:account-group)
-*Des styles atomiques qui facilitent la maintenance et la cohérence visuelle
--Des animations fluides pour une meilleure expérience utilisateur
-+Une adaptation parfaite sur tous les appareils grâce aux classes responsives
++ Des icônes directement accessibles via des classes (comme i-mdi:account-group)
+* Des styles atomiques qui facilitent la maintenance et la cohérence visuelle
+- Des animations fluides pour une meilleure expérience utilisateur
++ Une adaptation parfaite sur tous les appareils grâce aux classes responsives
 
 Le dashboard parent offre une expérience utilisateur intuitive avec :
 
-+Un arrière-plan dynamique qui s'anime doucement à l'ouverture pour créer une sensation accueillante
-*Une interface organisée en sections accordéon pour présenter les informations de façon claire sans surcharger l'écran
--Des boutons d'action contextuels qui apparaissent uniquement quand nécessaire
-+Un retour visuel immédiat lors des interactions (états hover, animations d'ouverture/fermeture)
-*Des indicateurs visuels pour les statuts (comme l'inscription à la cantine avec code couleur)
++ Un arrière-plan dynamique qui s'anime doucement à l'ouverture pour créer une sensation accueillante
+* Une interface organisée en sections accordéon pour présenter les informations de façon claire sans surcharger l'écran
+- Des boutons d'action contextuels qui apparaissent uniquement quand nécessaire
++ Un retour visuel immédiat lors des interactions (états hover, animations d'ouverture/fermeture)
+* Des indicateurs visuels pour les statuts (comme l'inscription à la cantine avec code couleur)
 
 
