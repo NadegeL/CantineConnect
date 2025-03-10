@@ -33,6 +33,9 @@ Je me qualifierais de "créatrice de solutions" : je réalise que si je souhaite
 J'ai la chance, de par mon expérience passée, d'avoir travaillé auprès d'une clientèle exigeante qui m'a apprise à me remettre en question très souvent, et à comprendre que chaque critique est constructive.
 
 ### 👨‍💻 Jérôme :
+Responsable Back-end et expert system réseau.
+Afin de complèter ma formation en system réseau j'ai décidé d'approfondir mes connaissances côté web. 
+Je me considère comme une personne "multitâches" j'aime à gérer les bug et la gestion du back mais j'aime aussi sécuriser mon environnement à des fins de performance maximum.
 
 
 
@@ -215,5 +218,13 @@ Le dashboard parent offre une expérience utilisateur intuitive avec :
 - Des boutons d'action contextuels qui apparaissent uniquement quand nécessaire
 + Un retour visuel immédiat lors des interactions (états hover, animations d'ouverture/fermeture)
 * Des indicateurs visuels pour les statuts (comme l'inscription à la cantine avec code couleur)
+ 
+ ## Conclusion
+
+
+Ce projet, reste un projet de fin de formation, c'est en se trompant qu'on apprend.
+Toutes critiques ou suggestions restent les bienvenues.
+Il n'est pas encore complètement fonctionnel et beaucoup d'options n'ont pas encore été adaptées.
+
 
 
