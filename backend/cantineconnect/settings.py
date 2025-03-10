@@ -158,12 +158,12 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'CRITICAL',  # Désactive quasiment tous les logs
+        'level': 'CRITICAL',  # Disables virtually all logs
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'CRITICAL',  # Désactive les logs Django sauf en cas d'erreur critique
+            'level': 'CRITICAL',  # Disables Django logs except in the event of a critical error
             'propagate': True,
         },
     },

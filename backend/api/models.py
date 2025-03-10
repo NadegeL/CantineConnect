@@ -1,6 +1,7 @@
 from .imports import *
 from django.db import models
-
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -74,9 +75,8 @@ class Address(models.Model):
         max_length=20,
         validators=[
             RegexValidator(
-                # Valide un code postal entre 4 et 10 chiffres
-                regex=r'^\d{4,10}$',
-                message="The postal code must contain between 4 and 10 digits."
+                regex=r'^[A-Z0-9]{3,10}$',
+                message="The postal code must contain between 3 and 10 alphanumeric characters."
             )
         ]
     )
@@ -86,15 +86,11 @@ class Address(models.Model):
         return f"{self.address_line_1}, {self.city}, {self.country}"
 
     def clean(self):
-        """
-        Custom validation to check field consistency.
-        """
-        if not self.postal_code.isdigit():
+        super().clean()
+        if len(self.country) < 2:
             raise ValidationError(
-                {'postal_code': "The zip code must be numeric only."})
-        if len(self.country) < 3:
-            raise ValidationError(
-                {'country': "The country name must be at least 3 characters long."})
+                {'country': "The country name must contain at least 2 characters."}
+            )
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -106,12 +102,10 @@ class Address(models.Model):
                            administration__isnull=True).delete()
 
 # Parent model
-class Parent(BaseModel):
+class Parent(models.Model):
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name='parent_profile')
+        User, on_delete=models.CASCADE, related_name='parent')
     phone_number = PhoneNumberField()
-    country_code = models.CharField(
-        max_length=2, choices=[('FR', 'France'), ('CH', 'Suisse')])
     invoice_available = models.BooleanField(default=False)
     address = models.ForeignKey(
         'Address', on_delete=models.SET_NULL, null=True)
@@ -137,23 +131,72 @@ class SchoolClass(BaseModel):
     def __str__(self):
         return self.name
 
+
+class Allergy(models.Model):
+    """Gérer les allergies et restrictions alimentaires"""
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Type d'allergies ou restrictions alimentaires"
+    )
+    description = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Description détaillée"
+    )
+    severity = models.CharField(
+        max_length=20,
+        choices=[
+            ('LOW', 'Faible'),
+            ('MEDIUM', 'Moyen'),
+            ('HIGH', 'Élevé'),
+            ('CRITICAL', 'Critique')
+        ],
+        default='LOW',
+        verbose_name="Niveau de sévérité"
+    )
+
+    def __str__(self):
+        return self.name
+
 # Student model
-class Student(BaseModel):
+class Student(models.Model):
     first_name = models.CharField(max_length=30, blank=False)
     last_name = models.CharField(max_length=30, blank=False)
     parents = models.ManyToManyField(
-        Parent, related_name='students', blank=True)
+        'Parent', through='ParentChildRelation', related_name='student', blank=True)
     grade = models.ForeignKey(
-        SchoolClass, on_delete=models.SET_NULL, null=True, blank=True)
+        'SchoolClass', on_delete=models.SET_NULL, null=True, blank=True)
     birth_date = models.DateField()
     allergies = models.ManyToManyField(
-        'Allergy', blank=True, verbose_name="Allergies et restrictions alimentaires")
+        Allergy, through='StudentAllergy', blank=True, verbose_name="Allergies et restrictions alimentaires")
 
     def __str__(self):
         parent_names = ", ".join(
             [f"{parent.user.first_name} {parent.user.last_name}" for parent in self.parents.all()])
         return f"{self.first_name} {self.last_name} - {self.grade.name if self.grade else 'No Class'} (Parents: {parent_names})"
 
+
+class ParentChildRelation(models.Model):
+    parent = models.ForeignKey(Parent, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    relation_type = models.CharField(max_length=20)
+
+    def __str__(self):
+        return f"{self.parent.user.first_name} {self.parent.user.last_name} - {self.student.first_name} {self.student.last_name}"
+
+class StudentAllergy(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    allergy = models.ForeignKey(Allergy, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.student} - {self.allergy}"
+
+@receiver(post_delete, sender=StudentAllergy)
+def delete_allergy_if_no_associations(sender, instance, **kwargs):
+    if not StudentAllergy.objects.filter(allergy=instance.allergy).exists():
+        instance.allergy.delete()
 
 class SchoolZone(models.Model):
     """Représente une zone scolaire"""
@@ -167,7 +210,7 @@ class SchoolZone(models.Model):
         choices=ZONE_CHOICES,
         unique=True,
         verbose_name="Nom de la zone"
-        )
+    )
 
     def __str__(self):
         return self.get_name_display()
@@ -212,43 +255,12 @@ class Holidays(BaseModel):
         blank=True,
         null=True,
         verbose_name="Description des vacances"
-        )
+    )
     school_year = models.CharField(max_length=9,
                                    validators=[
-                                   MinLengthValidator(9)],
+                                       MinLengthValidator(9)],
                                    verbose_name="Année scolaire"
                                    )
 
     def __str__(self):
         return f"{self.description} ({self.start_date} - {self.end_date})"
-
-
-class Allergy(BaseModel):
-    """Gérer les allergies et restrictions alimentaires"""
-    name = models.CharField(max_length=100,
-                            unique=True,
-                            verbose_name="Type d'allergies ou restrictions alimentaires"
-                            )
-    description = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name="Description détaillée"
-        )
-    severity = models.CharField(
-        max_length=20,
-        choices=[
-            ('LOW', 'Faible'),
-            ('MEDIUM', 'Moyen'),
-            ('HIGH', 'Élevé'),
-            ('CRITICAL', 'Critique')
-        ],
-        default='LOW',
-        verbose_name="Niveau de sévérité"
-    )
-
-    class Meta:
-        verbose_name = "Allergie"
-        verbose_name_plural = "Allergies"
-
-    def __str__(self):
-        return self.name
