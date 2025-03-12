@@ -110,20 +110,44 @@
         </div>
         <div class="form-group">
           <label>Allergies</label>
-          <div v-for="(allergy, allergyIndex) in student.allergies" :key="allergyIndex" class="allergy-item">
-            <select v-model="student.allergies[allergyIndex]">
-              <option v-for="allergyOption in availableAllergies(student, allergyIndex)" :key="allergyOption.id"
-                :value="allergyOption.id">
-                {{ allergyOption.name }}
-              </option>
-            </select>
-            <button type="button" @click="removeAllergy(student, allergyIndex)">Supprimer</button>
-          </div>
-          <button type="button" @click="addAllergy(student)">Ajouter une allergie</button>
+          <ul>
+            <li v-for="allergy in student.allergies" :key="allergy.id">
+              {{ allergy.name }}
+              <button type="button" @click="openAllergyModal(allergy)">Éditer</button>
+              <button type="button" @click="deleteStudentAllergyLocal(student.id, allergy.id)">Supprimer</button>
+            </li>
+          </ul>
         </div>
-
         <button type="submit" :disabled="isSubmitting || isError">Valider le profil de l'élève</button>
       </form>
+    </div>
+
+    <!-- Modale pour éditer les allergies -->
+    <div v-if="showAllergyModal" class="modal">
+      <div class="modal-content">
+        <span class="close" @click="closeAllergyModal">&times;</span>
+        <h2>Éditer l'allergie</h2>
+        <form @submit.prevent="updateAllergy">
+          <div class="form-group">
+            <label for="allergy-name">Nom de l'allergie</label>
+            <input id="allergy-name" v-model="selectedAllergy.name" required>
+          </div>
+          <div class="form-group">
+            <label for="allergy-description">Description</label>
+            <textarea id="allergy-description" v-model="selectedAllergy.description"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="allergy-severity">Sévérité</label>
+            <select id="allergy-severity" v-model="selectedAllergy.severity" required>
+              <option value="LOW">Faible</option>
+              <option value="MEDIUM">Moyen</option>
+              <option value="HIGH">Élevé</option>
+              <option value="CRITICAL">Critique</option>
+            </select>
+          </div>
+          <button type="submit">Mettre à jour l'allergie</button>
+        </form>
+      </div>
     </div>
 
     <div class="actions">
@@ -139,7 +163,8 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { fetchParentProfile, saveProfile, validatePhone as validatePhoneNumber } from '@/services/parentService';
 import { validatePassword as validateUserPassword } from '@/services/profileService';
-import { fetchStudents, updateStudent, fetchClasses, fetchAllergies } from '@/services/studentService';
+import { validateEmail } from '@/services/profileService';
+import { fetchStudentsByParent, updateStudent, fetchClasses, fetchAllergies, updateStudentAllergy, deleteStudentAllergy } from '@/services/studentService';
 import { VueTelInput } from 'vue-tel-input';
 import 'vue-tel-input/vue-tel-input.css';
 
@@ -172,6 +197,8 @@ const notice = ref(null);
 const isError = ref(false);
 const isSubmitting = ref(false);
 const hasUnsavedChanges = ref(false);
+const showAllergyModal = ref(false);
+const selectedAllergy = ref({ name: '', description: '', severity: 'LOW' });
 
 const validatePhone = (isValidNumber) => {
   isValid.value = isValidNumber;
@@ -182,11 +209,6 @@ const validatePhone = (isValidNumber) => {
     notice.value = '';
     isError.value = false;
   }
-};
-
-const validateEmail = (email) => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
 };
 
 const fetchProfile = async () => {
@@ -203,6 +225,7 @@ const fetchProfile = async () => {
         country: profileData.address?.country || '',
       },
       user: {
+        id: profileData.id,
         first_name: profileData.user?.first_name || '',
         last_name: profileData.user?.last_name || '',
         email: profileData.user?.email || '',
@@ -218,10 +241,10 @@ const fetchProfile = async () => {
   }
 };
 
-const fetchAllData = async () => {
+const fetchAllData = async (parentId) => {
   try {
     const [studentsData, classesData, allergiesData] = await Promise.all([
-      fetchStudents(),
+      fetchStudentsByParent(parentId),
       fetchClasses(),
       fetchAllergies()
     ]);
@@ -328,37 +351,66 @@ const goBack = () => {
   router.push('/parent-dashboard');
 };
 
-const availableAllergies = (student, currentIndex) => {
-  const selectedAllergies = student.allergies.filter((_, index) => index !== currentIndex);
-  return allergiesList.value.filter(allergy => !selectedAllergies.includes(allergy.id));
+const openAllergyModal = (allergy) => {
+  selectedAllergy.value = { ...allergy };
+  showAllergyModal.value = true;
 };
 
-const addAllergy = (student) => {
-  if (!student.allergies) {
-    student.allergies = [];
-  }
-  const availableOptions = availableAllergies(student, -1);
-  if (availableOptions.length > 0) {
-    student.allergies.push(null);
-    hasUnsavedChanges.value = true;
-  } else {
-    notice.value = "Toutes les allergies disponibles ont déjà été sélectionnées.";
+const closeAllergyModal = () => {
+  showAllergyModal.value = false;
+  selectedAllergy.value = { name: '', description: '', severity: 'LOW' };
+};
+
+const updateAllergy = async () => {
+  try {
+    await updateStudentAllergy(selectedAllergy.value);
+    closeAllergyModal();
+    notice.value = 'Allergie mise à jour avec succès.';
+    isError.value = false;
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'allergie:', error);
+    notice.value = 'Erreur lors de la mise à jour de l\'allergie.';
     isError.value = true;
   }
 };
 
-const removeAllergy = (student, index) => {
-  if (student.allergies && student.allergies.length > index) {
-    student.allergies.splice(index, 1);
-    hasUnsavedChanges.value = true;
+const deleteStudentAllergyLocal = async (studentId, allergyId) => {
+  if (confirm('Voulez-vous vraiment supprimer cette allergie ?')) {
+    try {
+      await deleteStudentAllergy(studentId, allergyId);
+      notice.value = 'Allergie supprimée avec succès.';
+      isError.value = false;
+      // Mettre à jour la liste des allergies de l'étudiant
+      const student = students.value.find(s => s.id === studentId);
+      student.allergies = student.allergies.filter(a => a.id !== allergyId);
+    } catch (error) {
+      console.error('Erreur lors de la suppression de l\'allergie:', error);
+      notice.value = 'Erreur lors de la suppression de l\'allergie.';
+      isError.value = true;
+    }
   }
 };
 
 onMounted(async () => {
-  await fetchProfile();
-  await fetchAllData();
+  try {
+    await fetchProfile();
+    if (form.value.user && form.value.user.id) {
+      const parentId = form.value.user.id;
+      await fetchAllData(parentId);
+    } else {
+      console.error("L'ID du parent n'est pas défini.");
+      // Gérez le cas où l'ID du parent est manquant
+      notice.value = 'Erreur : L\'ID du parent n\'est pas défini.';
+      isError.value = true;
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération des données:', error);
+    notice.value = 'Erreur lors de la récupération des données.';
+    isError.value = true;
+  }
 });
 </script>
+
 
 <style scoped>
 .update-profile {
@@ -436,5 +488,31 @@ button:disabled {
   margin-top: 20px;
   display: flex;
   justify-content: space-between;
+}
+
+.modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.close {
+  float: right;
+  font-size: 20px;
+  cursor: pointer;
 }
 </style>

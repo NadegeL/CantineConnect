@@ -13,6 +13,7 @@ from django.contrib.auth.models import (AbstractBaseUser,
 
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import authenticate, get_user_model
 from django.core.validators import (
     MinLengthValidator,
     RegexValidator

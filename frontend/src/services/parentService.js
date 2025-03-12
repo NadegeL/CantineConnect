@@ -1,6 +1,6 @@
 import api from '@/http-common';
 
-import { validatePhone, validatePassword, prepareProfileData } from './profileService';
+import { validatePhone, validatePassword, prepareProfileData, validateEmail } from './profileService';
 
 export const fetchParentProfile = async () => {
   try {
@@ -33,4 +33,4 @@ export const saveProfile = async (profileData) => {
   }
 };
 
-export { validatePhone, validatePassword, prepareProfileData };
+export { validatePhone, validatePassword, prepareProfileData, validateEmail };

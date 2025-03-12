@@ -4,7 +4,7 @@ from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import (Address, Administration, Allergy, Holidays, Parent,
-                     SchoolClass, SchoolZone, Student)
+                     SchoolClass, SchoolZone, Student, StudentAllergy, ParentChildRelation)
 
 
 User = get_user_model()
@@ -25,12 +25,12 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     new_password = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = User
         fields = ['id', 'email', 'first_name',
                   'last_name', 'user_type', 'new_password']
         extra_kwargs = {'password': {'write_only': True}}
-
 
     def create(self, validated_data):
         user_type = validated_data.get('user_type')
@@ -72,7 +72,7 @@ class AdministrationSerializer(serializers.ModelSerializer):
 class ParentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Parent
-        fields = ['user', 'phone_number', 'invoice_available',
+        fields = ['id', 'user', 'phone_number', 'invoice_available',
                   'address', 'is_activated', 'relation']
 
 
@@ -116,7 +116,7 @@ class ParentProfileUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Parent
-        fields = ['phone_number', 'invoice_available', 'address',
+        fields = ['id','phone_number', 'invoice_available', 'address',
                   'user', 'relation']
 
     def update(self, instance, validated_data):
@@ -145,6 +145,12 @@ class ParentProfileUpdateSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
+class AllergySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Allergy
+        fields = '__all__'
+
+
 class SchoolZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = SchoolZone
@@ -153,32 +159,54 @@ class SchoolZoneSerializer(serializers.ModelSerializer):
 
 class StudentSerializer(serializers.ModelSerializer):
     parents = serializers.PrimaryKeyRelatedField(
-        queryset=Parent.objects.all(), many=True)
-    allergies = serializers.PrimaryKeyRelatedField(
-        queryset=Allergy.objects.all(), many=True, required=False)
+        queryset=Parent.objects.all(), many=True, required=False
+    )
+    allergies = AllergySerializer(many=True, read_only=True)
 
     class Meta:
         model = Student
-        fields = '__all__'
+        fields = ["id", "first_name", "last_name",
+                  "birth_date", "grade", "parents", "allergies"]
 
     def create(self, validated_data):
-        parents_data = validated_data.pop('parents', [])
+        first_name = validated_data.get('first_name')
+        last_name = validated_data.get('last_name')
+        birth_date = validated_data.get('birth_date')
+        parents_data = validated_data.pop(
+            "parents", [])  # Récupération des parents
         allergies_data = validated_data.pop('allergies', [])
+
+        # Vérifiez si un étudiant avec les mêmes informations existe déjà pour l'un des parents
+        for parent_id in parents_data:
+            if Student.objects.filter(
+                first_name=first_name,
+                last_name=last_name,
+                birth_date=birth_date,
+                parents__id=parent_id.id  # Assurez-vous que parent_id est un entier
+            ).exists():
+                raise serializers.ValidationError(
+                    "Un étudiant avec les mêmes informations existe déjà pour ce parent."
+                )
+
         student = Student.objects.create(**validated_data)
-        student.parents.set(parents_data)
-        student.allergies.set(allergies_data)
+
+        # Création manuelle des relations Parent-Student
+        for parent_id in parents_data:
+            # Assurez-vous que parent_id est un entier
+            parent = Parent.objects.get(id=parent_id.id)
+            ParentChildRelation.objects.create(parent=parent, student=student)
+
+        # Création des relations Allergie-Student
+        for allergy_data in allergies_data:
+            allergy, created = Allergy.objects.get_or_create(**allergy_data)
+            StudentAllergy.objects.create(student=student, allergy=allergy)
+
         return student
 
 
 class SchoolClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = SchoolClass
-        fields = '__all__'
-
-
-class AllergySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Allergy
         fields = '__all__'
 
 
@@ -194,3 +222,9 @@ class HolidaysSerializer(serializers.ModelSerializer):
         zone, _ = SchoolZone.objects.get_or_create(**zone_data)
         holidays = Holidays.objects.create(zone=zone, **validated_data)
         return holidays
+
+
+class ParentChildRelationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ParentChildRelation
+        fields = '__all__'
