@@ -9,6 +9,11 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@fullcalendar/core": "^6.1.15",
+        "@fullcalendar/daygrid": "^6.1.15",
+        "@fullcalendar/interaction": "^6.1.15",
+        "@fullcalendar/timegrid": "^6.1.15",
+        "@fullcalendar/vue3": "^6.1.15",
         "ky": "^1.7.4",
         "libphonenumber-js": "^1.10.51",
         "pinia": "^3.0.1",
