@@ -32,7 +32,7 @@
               </div>
               <h2 class="text-xl font-semibold text-green-800">Enfants({{ enfants.length }})</h2>
               <div class="flex gap-2 ml-4">
-                <button @click.stop="addItem('enfants')"
+                <button @click.stop="openCreateStudentModal"
                   class="bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded-md text-sm transition-colors flex items-center gap-1">
                   <span class="i-mdi:plus w-4 h-4"></span>
                   Ajouter
@@ -51,7 +51,8 @@
               </div>
               <div v-for="enfant in enfants" :key="enfant.id" class="border-b border-green-100 py-3">
                 <h3 class="font-medium">{{ enfant.prenom }} {{ enfant.nom }}</h3>
-                <p class="text-gray-600">Classe: {{ enfant.classe }}</p>
+                <!-- Utilisation de la méthode pour obtenir le nom de la classe -->
+                <p class="text-gray-600">Classe: {{ getClassName(enfant.classe) }}</p>
                 <p class="text-gray-600">
                   Statut cantine:
                   <span :class="enfant.inscrit_cantine ? 'text-green-600' : 'text-red-600'">
@@ -127,7 +128,9 @@
                 <p class="text-gray-600">Motif: {{ justif.motif }}</p>
               </div>
             </div>
-          </div>... <!-- Section Allergies/PAI -->
+          </div>
+
+          <!-- Section Allergies/PAI -->
           <div class="mb-4">
             <div class="flex items-center bg-white bg-opacity-80 p-4 rounded-lg cursor-pointer shadow-sm"
               @click="toggleSection('allergies')">
@@ -136,7 +139,7 @@
               </div>
               <h2 class="text-xl font-semibold text-green-800">Allergies/PAI</h2>
               <div class="flex gap-2 ml-4">
-                <button @click.stop="addItem('allergies')"
+                <button @click.stop="openAddAllergyModal"
                   class="bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded-md text-sm transition-colors flex items-center gap-1">
                   <span class="i-mdi:plus w-4 h-4"></span>
                   Ajouter
@@ -156,6 +159,13 @@
               <div v-for="allergie in allergies" :key="allergie.id" class="border-b border-green-100 py-3">
                 <h3 class="font-medium">{{ allergie.enfant }}</h3>
                 <p class="text-gray-600">Type: {{ allergie.type }}</p>
+                <!-- Affichage de la sévérité avec couleur et traduction -->
+                <p class="text-gray-600">
+                  Sévérité:
+                  <span :class="severityColor(allergie.severity)">
+                    {{ translateSeverity(allergie.severity) }}
+                  </span>
+                </p>
                 <p class="text-gray-600">Description: {{ allergie.description }}</p>
               </div>
             </div>
@@ -187,27 +197,39 @@
       </div>
     </div>
 
+
     <div v-if="showProfileModal" class="modal-overlay">
       <div class="modal-content">
         <ProfileModal :parentData="parentData" @save="saveProfile" @close="closeProfileModal" />
       </div>
     </div>
+
+    <!-- Modale de création d'élève -->
+    <CreateStudentModal v-if="showCreateStudentModal" :showModal="showCreateStudentModal" :parentId="parentId"
+      @close="closeCreateStudentModal" @create="handleCreateStudent" />
+
+    <!-- Ajout de la modale AddAllergyModal -->
+    <AddAllergyModal v-if="showAddAllergyModal" :students="students" @close="closeAddAllergyModal"
+      @created="handleAllergyCreated" />
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeMount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import WelcomeModal from './WelcomeModal.vue';
 import ProfileModal from './ProfileModal.vue';
+import CreateStudentModal from './CreateStudentModal.vue';
+import AddAllergyModal from './AddAllergyModal.vue';
 import { fetchParentProfile, saveProfile } from '@/services/parentService';
+import { fetchStudentsByParent, fetchStudentAllergies, fetchClasses } from '@/services/studentService';
 import { logout } from '@/services/authService';
-import logoImage from '@/assets/Logo.png'
+import logoImage from '@/assets/Logo.png';
 
 export default {
   name: 'ParentDashboard',
-  components: { WelcomeModal, ProfileModal },
+  components: { WelcomeModal, ProfileModal, CreateStudentModal, AddAllergyModal },
   data() {
     return {
       logoPath: logoImage,
@@ -228,24 +250,72 @@ export default {
         responsables: false,
         justificatifs: false,
         allergies: false
-      }
+      },
+      classes: []
     }
   },
   setup() {
     const router = useRouter();
     const showWelcomeModal = ref(false);
     const showProfileModal = ref(false);
+    const showCreateStudentModal = ref(false);
+    const showAddAllergyModal = ref(false);
     const parentData = ref(null);
+    const parentId = ref(null);
     const authStore = useAuthStore();
+    const logoPath = ref(logoImage);
+    const backgroundLoaded = ref(false);
+    const enfants = ref([]);
+    const responsables = ref([]);
+    const justificatifs = ref([]);
+    const allergies = ref([]);
+    const students = ref([]);
+    const sections = ref({
+      enfants: false,
+      responsables: false,
+      justificatifs: false,
+      allergies: false
+    });
+    const classes = ref([]);
+
+    // Fonctions pour la sévérité
+    const severityColor = (severity) => {
+      return {
+        'LOW': 'text-green-600',
+        'MEDIUM': 'text-yellow-600',
+        'HIGH': 'text-orange-600',
+        'CRITICAL': 'text-red-600'
+      }[severity] || 'text-gray-600';
+    };
+
+    const translateSeverity = (severity) => {
+      return {
+        'LOW': 'Faible',
+        'MEDIUM': 'Moyenne',
+        'HIGH': 'Élevée',
+        'CRITICAL': 'Critique'
+      }[severity] || 'Inconnue';
+    };
+
+    const openAddAllergyModal = () => {
+      showAddAllergyModal.value = true;
+    };
+
+    const closeAddAllergyModal = () => {
+      showAddAllergyModal.value = false;
+    };
 
     const isProfileComplete = () => {
-      return (
+      const complete = (
         parentData.value &&
+        parentData.value.user &&
         parentData.value.user.first_name &&
         parentData.value.user.last_name &&
         parentData.value.address &&
         parentData.value.phone_number
       );
+      console.log('Profil complet:', complete);
+      return complete;
     };
 
     const checkFirstLogin = async () => {
@@ -254,6 +324,7 @@ export default {
         console.log('Profil incomplet, affichage de la modale de bienvenue.');
         setTimeout(() => {
           showWelcomeModal.value = true;
+          console.log('Modale de bienvenue affichée:', showWelcomeModal.value);
         }, 1500); // Délai de 1.5 secondes pour correspondre à l'animation
       } else {
         console.log('Profil complet, pas besoin d\'afficher la modale.');
@@ -265,11 +336,16 @@ export default {
         console.log('Récupération du profil parent...');
         const data = await fetchParentProfile();
         parentData.value = data;
+        parentId.value = data.id;
         console.log('Profil parent récupéré :', parentData.value);
+        checkFirstLogin(); // Appel de la vérification après la récupération du profil
+        return data.id;
       } catch (error) {
         console.error('Erreur lors de la récupération du profil :', error);
+        return null;
       }
     };
+
 
     const updateProfile = async (profileData) => {
       try {
@@ -285,6 +361,8 @@ export default {
     const openProfileModal = () => {
       console.log('Ouverture de la modale pour compléter les informations.');
       showWelcomeModal.value = false;
+      showCreateStudentModal.value = false;
+      showAddAllergyModal.value = false;
       showProfileModal.value = true;
     };
 
@@ -308,95 +386,162 @@ export default {
       }
     };
 
+    const openCreateStudentModal = () => {
+      console.log('Ouverture de la modale de création d\'élève.');
+      showCreateStudentModal.value = true;
+    };
+
+    const closeCreateStudentModal = () => {
+      console.log('Fermeture de la modale de création d\'élève.');
+      showCreateStudentModal.value = false;
+    };
+
+    const handleCreateStudent = () => {
+      console.log('Élève créé avec succès.');
+      fetchData(parentId.value);
+    };
+
+    const loadBackgroundImage = () => {
+      const img = new Image();
+      img.src = logoPath.value;
+      img.onload = () => {
+        backgroundLoaded.value = true;
+      };
+    };
+
+    const toggleSection = (section) => {
+      sections.value[section] = !sections.value[section];
+    };
+
+    const addItem = (section) => {
+      console.log(`Ajout d'un élément dans la section: ${section}`);
+    };
+
+    const modifyItem = (section) => {
+      console.log(`Modification d'un élément dans la section: ${section}`);
+    };
+
+    const getInitials = (prenom, nom) => {
+      return `${prenom.charAt(0)}.${nom.charAt(0)}`;
+    };
+
+    const getClassName = (classId) => {
+      const classe = classes.value.find(classe => classe.id === classId);
+      return classe ? classe.name : 'Classe inconnue';
+    };
+
+    const fetchData = async (parentId) => {
+      if (!parentId) {
+        console.warn('Parent ID is not available yet.');
+        return;
+      }
+      try {
+        // Récupération réelle des étudiants
+        const studentsResponse = await fetchStudentsByParent(parentId);
+        enfants.value = studentsResponse.map(student => ({
+          id: student.id,
+          nom: student.last_name,
+          prenom: student.first_name,
+          classe: student.grade,
+          inscrit_cantine: student.inscrit_cantine
+        }));
+
+        // Récupération des allergies
+        allergies.value = [];
+        for (const student of studentsResponse) {
+          const studentAllergies = await fetchStudentAllergies(student.id);
+          allergies.value.push(...studentAllergies.map(allergy => ({
+            id: allergy.id,
+            enfant: `${student.first_name} ${student.last_name}`,
+            type: allergy.name,
+            description: allergy.description,
+            severity: allergy.severity
+          })));
+        }
+
+        students.value = studentsResponse;
+
+      } catch (error) {
+        console.error('Erreur lors de la récupération des données:', error);
+      }
+    };
+
+    const handleAllergyCreated = () => {
+      fetchData(parentId.value);
+    };
+
+    onBeforeMount(async () => {
+      loadBackgroundImage();
+      const id = await getParentProfile();
+      if (id) {
+        fetchData(id);
+      }
+    });
+
     onMounted(async () => {
-      console.log('Montage du composant ParentsDashboard.');
-      await getParentProfile();
-      checkFirstLogin();
+      // Récupération des classes
+      try {
+        const classesData = await fetchClasses();
+        classes.value = classesData;
+      } catch (error) {
+        console.error("Erreur lors de la récupération des classes:", error);
+      }
+      const hideNavbar = () => {
+        const navbar = document.querySelector('.navbar');
+        if (navbar) {
+          navbar.style.display = 'none';
+        }
+      };
+
+      const showNavbar = () => {
+        const navbar = document.querySelector('.navbar');
+        if (navbar) {
+          navbar.style.display = 'block';
+        }
+      };
+
+      hideNavbar();
+
+      return () => {
+        showNavbar();
+      };
     });
 
     return {
       showWelcomeModal,
       showProfileModal,
+      showCreateStudentModal,
+      showAddAllergyModal,
       parentData,
+      parentId,
+      logoPath,
+      backgroundLoaded,
+      enfants,
+      responsables,
+      justificatifs,
+      allergies,
+      students,
+      sections,
+      classes,
       updateProfile,
       openProfileModal,
       closeProfileModal,
       goToUpdateProfile,
       logoutUser,
-      saveProfile // Ajoutez cette ligne pour retourner la méthode saveProfile
+      openCreateStudentModal,
+      closeCreateStudentModal,
+      handleCreateStudent,
+      openAddAllergyModal,
+      closeAddAllergyModal,
+      handleAllergyCreated,
+      getInitials,
+      toggleSection,
+      addItem,
+      modifyItem,
+      getClassName,
+      severityColor,
+      translateSeverity
     };
-  },
-  mounted() {
-    this.hideNavbar();
-    this.loadBackgroundImage();
-    this.fetchData();
-  },
-  beforeUnmount() {
-    this.showNavbar();
-  },
-  methods: {
-    loadBackgroundImage() {
-      const img = new Image();
-      img.src = this.logoPath;
-      img.onload = () => {
-        this.backgroundLoaded = true;
-      };
-    },
-    hideNavbar() {
-      const navbar = document.querySelector('.navbar');
-      if (navbar) {
-        navbar.style.display = 'none';
-      }
-    },
-    showNavbar() {
-      const navbar = document.querySelector('.navbar');
-      if (navbar) {
-        navbar.style.display = 'block';
-      }
-    },
-    toggleSection(section) {
-      this.sections[section] = !this.sections[section];
-    },
-    addItem(section) {
-      console.log(`Ajout d'un élément dans la section: ${section}`);
-    },
-    modifyItem(section) {
-      console.log(`Modification d'un élément dans la section: ${section}`);
-    },
-    getInitials(prenom, nom) {
-      return `${prenom.charAt(0)}.${nom.charAt(0)}`;
-    },
-    async fetchData() {
-      try {
-        // Exemple d'enfants
-        this.enfants = [
-          { id: 1, nom: 'Luthier', prenom: 'Thomas', classe: 'CE2', inscrit_cantine: true },
-          { id: 2, nom: 'Luthier', prenom: 'Emma', classe: 'CM1', inscrit_cantine: false }
-        ];
-
-        // Exemples de responsables
-        this.responsables = [
-          {
-            id: 1,
-            nom: 'Luthier',
-            prenom: 'Nadège',
-            telephone: '06 12 34 56 78',
-            email: 'nadege.luthier@example.com',
-            adresse: '123 Rue de l\'École, 75001 Paris'
-          },
-          {
-            id: 2,
-            nom: 'Luthier',
-            prenom: 'Marc',
-            telephone: '06 98 76 54 32',
-            email: 'marc.luthier@example.com',
-            adresse: '123 Rue de l\'École, 75001 Paris'
-          }
-        ];
-      } catch (error) {
-        console.error('Erreur lors de la récupération des données:', error);
-      }
-    }
   }
 }
 </script>

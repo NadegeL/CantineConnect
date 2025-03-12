@@ -266,6 +266,7 @@ class StudentViewSet(viewsets.ModelViewSet):
         except Parent.DoesNotExist:
             return Response({"error": "Parent not found"}, status=status.HTTP_404_NOT_FOUND)
 
+
 class AdministrationViewSet(viewsets.ModelViewSet):
     queryset = Administration.objects.all()
     serializer_class = AdministrationSerializer
