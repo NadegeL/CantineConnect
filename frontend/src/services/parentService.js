@@ -1,14 +1,13 @@
 import api from '@/http-common';
 
-import { validatePhone, validatePassword, prepareProfileData } from './profileService';
+import { validatePhone, validatePassword, prepareProfileData, validateEmail } from './profileService';
 
 export const fetchParentProfile = async () => {
   try {
     const response = await api.get('parent/profile/');
-    return await response.json();
+    return response.json();
   } catch (error) {
-    console.error('Erreur lors de la récupération du profil parent :', error);
-    throw error;
+    throw new Error(`Erreur API: ${error.message}`);
   }
 };
 
@@ -33,4 +32,14 @@ export const saveProfile = async (profileData) => {
   }
 };
 
-export { validatePhone, validatePassword, prepareProfileData };
+export const getParentId = async () => {
+  try {
+    const response = await fetchParentProfile();
+    return response.id; // Assurez-vous que la réponse contient bien un champ 'id'
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'ID du parent :', error);
+    throw error;
+  }
+};
+
+export { validatePhone, validatePassword, prepareProfileData, validateEmail };
