@@ -40,7 +40,6 @@ export const updateStudentAllergy = async (allergyData) => {
   }
 };
 
-
 export const fetchClasses = async () => {
   try {
     const response = await api.get('classes/').json();
@@ -61,7 +60,6 @@ export const fetchAllergies = async () => {
   }
 };
 
-
 export const deleteStudentAllergy = async (studentId, allergyId) => {
   try {
     const response = await api.delete(`students/${studentId}/allergies/${allergyId}/`).json();
@@ -74,16 +72,48 @@ export const deleteStudentAllergy = async (studentId, allergyId) => {
 
 export const createStudentWithParent = async (studentData, parentId) => {
   try {
-    const response = await api.post('students/', JSON.stringify(studentData)).json();
-    const studentId = response.id;
-    await api.post('parent-child-relations/', JSON.stringify({
-      parent: parentId,
-      child: studentId,
-      relation_type: 'Mère'
-    }));
+    const response = await api.post('students/', {
+      json: {
+        first_name: studentData.first_name.trim(),
+        last_name: studentData.last_name.trim(),
+        birth_date: studentData.birth_date,
+        grade: studentData.grade,
+        parents: [parentId],
+        allergies: studentData.allergies || []
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Full error response:", error.response); // Log the full error response
+    let errorMessage = "Erreur lors de la création";
+    if (error.response?.data) {
+      errorMessage = Array.isArray(error.response.data)
+        ? error.response.data.join(', ')
+        : error.response.data.detail || error.response.data.message || "Erreur inconnue";
+    }
+    throw new Error(errorMessage);
+  }
+};
+
+
+export const createAllergy = async (allergyData) => {
+  try {
+    const response = await api.post('allergies/', {
+      json: allergyData
+    }).json();
     return response;
   } catch (error) {
-    console.error("Erreur lors de la création de l'étudiant avec relation parent:", error);
+    console.error("Erreur création allergie:", error);
+    throw error;
+  }
+};
+
+export const fetchStudentAllergies = async (studentId) => {
+  try {
+    const response = await api.get(`students/${studentId}/allergies/`);
+    return response.json();
+  } catch (error) {
+    console.error("Erreur allergies:", error);
     throw error;
   }
 };
