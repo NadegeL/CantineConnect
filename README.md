@@ -1,4 +1,13 @@
-🍽️ Projet Portfolio - Gestion Cantine - 
+
+# Projet de Gestion de Cantine Scolaire
+
+⚠️ AVIS IMPORTANT ⚠️
+
+Ce dépôt est rendu public uniquement à des fins d'évaluation professionnelle et académique.
+Tout le contenu est protégé par copyright et n'est pas disponible pour utilisation, modification,
+ou distribution. Voir le fichier LICENSE pour plus de détails.
+
+© 2025 [ Luthier Nadège, Romand Jérôme ] - Tous droits réservés
 
 ***🚧 En cours de construction 🚧***
 
